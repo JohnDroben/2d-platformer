@@ -1,5 +1,4 @@
 import pygame
-
 from Characters.action import Action
 from Characters.character import Character
 
@@ -10,18 +9,19 @@ class AnimatedObject:
       self.animation_speed = 100  # ms per frame
       self.frames = {}  # Хранит кадры для каждого действия
       self.current_action = Action.IDLE
+      self.prev_action = None  # Добавлено для отслеживания предыдущего действия
       self.frame = 0
       self.last_update = pygame.time.get_ticks()
       self.direction = 1
       self.draw_hitbox = True  # Флаг для отключения хитбокса
+      self.sound_played_for_frame = {}  # Для отслеживания воспроизведенных звуков
+      self.sound_triggers = {  # Определяем, на каких кадрах какие звуки играть
+         Action.JUMP: {0: Action.JUMP},
+         Action.MOVE: {0: Action.MOVE}
+      }
 
    def load_action_frames(self, action: Action, file_path: str, frame_count: int):
-      """
-      Загружает кадры для конкретного действия из файла-строки
-      :param action: Название действия ('idle', 'jump' и т.д.)
-      :param file_path: Путь к файлу с кадрами
-      :param frame_count: Количество кадров в файле
-      """
+      """Загружает кадры для конкретного действия"""
       sprite_sheet = pygame.image.load(file_path).convert_alpha()
       frame_width = sprite_sheet.get_width() // frame_count
       frame_height = sprite_sheet.get_height()
@@ -35,23 +35,44 @@ class AnimatedObject:
       self.frames[action] = frames
 
    def update_animation(self):
-      """Обновляет кадр анимации"""
+      """Обновляет кадр анимации и проверяет звуковые триггеры"""
       now = pygame.time.get_ticks()
       if now - self.last_update > self.animation_speed:
          self.last_update = now
 
-         # Для прыжка: не зацикливать анимацию
+         # Проверка звуковых триггеров перед обновлением кадра
+         self._check_sound_triggers()
+
+         # Обновление кадра
          if self.current_action == Action.JUMP:
-            if self.frame < len(self.frames) - 1:
+            if self.frame < len(self.frames[self.current_action]) - 1:
                self.frame += 1
          else:
-            self.frame = (self.frame + 1) % len(self.frames)
+            self.frame = (self.frame + 1) % len(self.frames[self.current_action])
+
+   def _check_sound_triggers(self):
+      """Проверяет и воспроизводит звуки для текущего кадра"""
+      if self.current_action in self.sound_triggers:
+         frame_triggers = self.sound_triggers[self.current_action]
+
+         if self.frame in frame_triggers:
+            sound_action = frame_triggers[self.frame]
+            if not self.sound_played_for_frame.get((self.current_action, self.frame), False):
+               if hasattr(self.character, 'sound_obj'):
+                  self.character.sound_obj.play(sound_action)
+                  self.sound_played_for_frame[(self.current_action, self.frame)] = True
+
+      # Сброс флагов при смене действия
+      if self.current_action != self.prev_action:
+         self.sound_played_for_frame.clear()
+         self.prev_action = self.current_action
 
    def change_action(self, new_action: Action):
       """Меняет текущее действие"""
       if new_action != self.current_action and new_action in self.frames:
          self.current_action = new_action
          self.frame = 0
+         self.sound_played_for_frame.clear()  # Сбрасываем флаги звуков
 
    def update(self):
       """Обновляет состояние анимации"""
@@ -72,16 +93,9 @@ class AnimatedObject:
          # Отрисовываем спрайт персонажа
          surface.blit(frame, self.character.rect)
 
-      # Отрисовываем хитбокс (только в режиме отладки)
-      if self.draw_hitbox:  # Глобальная переменная для отладки
-         # Создаем поверхность для хитбокса с прозрачностью
+      # Отрисовка хитбокса (только в режиме отладки)
+      if self.draw_hitbox:
          hitbox_surf = pygame.Surface((self.character.rect.w, self.character.rect.h), pygame.SRCALPHA)
-
-         # Рисуем полупрозрачную заливку
          pygame.draw.rect(hitbox_surf, (255, 0, 0, 50), hitbox_surf.get_rect())
-
-         # Рисуем контур
          pygame.draw.rect(hitbox_surf, (255, 0, 0, 255), hitbox_surf.get_rect(), 1)
-
-         # Наложение на экран
          surface.blit(hitbox_surf, self.character.rect)
