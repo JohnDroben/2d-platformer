@@ -12,7 +12,7 @@ from Characters.type_object import ObjectType
 # Инициализация Pygame
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("2D Platformer - Level Demo")
+pygame.display.set_caption("2D Platformer")
 
 # Цвета
 WHITE = (255, 255, 255)
@@ -23,6 +23,7 @@ DARK_GREEN = (20, 30, 15)
 
 # Шрифт
 font = pygame.font.SysFont('Arial', 24)
+large_font = pygame.font.SysFont('Arial', 72)  # Для Game Over текста
 
 ground_level = SCREEN_HEIGHT
 
@@ -49,6 +50,7 @@ def create_player(x, y):
 def main():
     clock = pygame.time.Clock()
     level_manager = LevelManager()
+    level_manager.reset()
     Logger().initialize()
 
     # Инициализация игрока у стартового портала
@@ -56,10 +58,10 @@ def main():
     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (100, SCREEN_HEIGHT - 150)
     player, player_anim = create_player(*start_pos)
 
-
-    # Параметры камеры
+    # Камера
     camera_offset = [0, 0]
     running = True
+    game_over = False  # Флаг состояния Game Over
 
     while running:
         # Обработка событий
@@ -71,7 +73,7 @@ def main():
                     running = False
                 elif event.key == pygame.K_SPACE and level_manager.current_level.completed:
                     if not level_manager.next_level():
-                        Logger().info("Демо завершено!")
+                        Logger().info("Игра завершена!")
                         running = False
                     else:
                         start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
@@ -111,14 +113,41 @@ def main():
 
         # Обновление
         if not level_manager.current_level.completed:
+            player.update(level_manager.current_level)
 
+            # Проверка падения за экран (Game Over)
+            if player.rect.top > SCREEN_HEIGHT:
+                game_over = True
 
-            # Позиция камеры (следим за игроком)
+            # Проверка опасных столкновений
+            if level_manager.current_level.check_hazard_collision(player.rect):
+                # Респавн при смерти
+                start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
+                start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
+                    100, SCREEN_HEIGHT - 150)
+                player = Player(*start_pos)
+
+            # Проверка падения в яму
+            if level_manager.current_level.check_fall_into_pit(player.rect):
+                start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
+                start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
+                    100, SCREEN_HEIGHT - 150)
+                player = Player(*start_pos)
+
+            # Сбор бонусов и артефактов
+            level_manager.current_level.collect_bonuses(player.rect)
+            level_manager.current_level.collect_artifacts(player.rect)
+
+            # Проверка финиша
+            if level_manager.current_level.check_finish(player.rect):
+                level_manager.current_level.completed = True
+                level_manager.current_level.completion_time = pygame.time.get_ticks()
+
+            # Позиция камеры
             camera_offset[0] = SCREEN_WIDTH // 2 - player.rect.centerx
-            # Ограничиваем камеру границами уровня
             camera_offset[0] = max(min(camera_offset[0], 0), SCREEN_WIDTH - LEVEL_WIDTH)
-        else:
-            # Автопереход на следующий уровень через 3 секунды
+        elif level_manager.current_level.completed and not game_over:
+            # Автопереход на следующий уровень
             if pygame.time.get_ticks() - level_manager.current_level.completion_time > 3000:
                 if not level_manager.next_level():
                     running = False
@@ -131,7 +160,7 @@ def main():
         # Отрисовка
         screen.fill(DARK_GREEN)
 
-        # Отрисовка уровня с учетом смещения камеры
+        # Отрисовка уровня
         level_surface = pygame.Surface((LEVEL_WIDTH, SCREEN_HEIGHT))
         level_manager.current_level.draw(level_surface)
         screen.blit(level_surface, camera_offset)
@@ -156,6 +185,21 @@ def main():
         if level_manager.current_level.completed:
             text = font.render(level_manager.get_level_completion_message(), True, WHITE)
             screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+
+        # Отрисовка Game Over экрана
+        if game_over:
+            # Затемнение экрана
+            s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            s.fill((0, 0, 0, 180))
+            screen.blit(s, (0, 0))
+
+            # Текст Game Over
+            game_over_text = large_font.render("GAME OVER", True, RED)
+            restart_text = font.render("Нажмите R для рестарта", True, WHITE)
+            screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2,
+                                         SCREEN_HEIGHT // 2 - 50))
+            screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2,
+                                       SCREEN_HEIGHT // 2 + 50))
 
         pygame.display.flip()
         clock.tick(60)
