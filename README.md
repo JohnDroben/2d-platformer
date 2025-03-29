@@ -1,6 +1,6 @@
 # 2D Platformer
 Игра разработана на Python с использованием Pygame.
-![Gameplay Demo](Characters/assets/demonstration.gif)
+![Gameplay Demo](Characters/demonstration.gif)
 
 ### Особенности
 Тестовый файл движения персонажа, обработки взаимодействия с обьектом, проигрыш анимации
