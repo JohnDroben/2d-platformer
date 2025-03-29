@@ -3,6 +3,12 @@ import sys
 from levels import LevelManager, LEVEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT
 from custom_logging import Logger
 
+from Characters.action import Action
+from Characters.character import Character
+from Characters.animation2 import AnimatedObject
+from Characters.type_object import ObjectType
+
+
 # Инициализация Pygame
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -18,35 +24,26 @@ DARK_GREEN = (20, 30, 15)
 # Шрифт
 font = pygame.font.SysFont('Arial', 24)
 
+ground_level = SCREEN_HEIGHT
 
-class DemoPlayer:
-    def __init__(self, x, y):
-        self.rect = pygame.Rect(x, y, 30, 50)
-        self.speed = 5  # Скорость автоматического движения
-        self.color = BLUE
-        self.is_active = True
 
-    def update(self, level):
-        if not self.is_active:
-            return
-
-        # Автоматическое движение вправо
-        self.rect.x += self.speed
-
-        # Проверка выхода за границы уровня
-        if self.rect.x > LEVEL_WIDTH:
-            self.rect.x = -self.rect.width
-
-        # Проверка финиша
-        if level.check_finish(self.rect):
-            level.completed = True
-            self.is_active = False
-
-    def draw(self, surface, camera_offset):
-        player_rect = self.rect.move(camera_offset[0], camera_offset[1])
-        pygame.draw.rect(surface, self.color, player_rect)
-        pygame.draw.circle(surface, WHITE, (player_rect.right - 10, player_rect.top + 15), 5)
-        pygame.draw.circle(surface, WHITE, (player_rect.right - 10, player_rect.top + 35), 5)
+def create_player(x, y):
+    player = Character(
+        x=x,  # Стартовая позиция X (не привязывать к ground_level)
+        y=y,  # Ставим на поверхность (ground_level - высота)
+        width=60,  # Ширина hitbox (рекомендую уменьшить)
+        height=80,  # Высота hitbox (рекомендую уменьшить)
+        speed=4.0,  # Оптимальная скорость движения
+        jump_force=12,  # Сила прыжка
+        gravity=0.6,  # Гравитация
+        ground_level=ground_level  # Уровень земли
+    )
+    player_anim = AnimatedObject(player)
+    # Для каждого действия указываем файл и количество кадров
+    player_anim.load_action_frames(Action.IDLE, 'Characters/assets/sprites/idle.png', 7)
+    # player_anim.load_action_frames('move', 'assets/run.png', 6)
+    player_anim.load_action_frames(Action.JUMP, 'Characters/assets/sprites/jump.png', 13)
+    return player, player_anim
 
 
 def main():
@@ -57,7 +54,8 @@ def main():
     # Инициализация игрока у стартового портала
     start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (100, SCREEN_HEIGHT - 150)
-    player = DemoPlayer(*start_pos)
+    player, player_anim = create_player(*start_pos)
+
 
     # Параметры камеры
     camera_offset = [0, 0]
@@ -79,11 +77,41 @@ def main():
                         start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                         start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                         100, SCREEN_HEIGHT - 150)
-                        player = DemoPlayer(*start_pos)
+                        player, player_anim = create_player(*start_pos)
+
+            # Управление
+        keys = pygame.key.get_pressed()
+        player.direction = 0
+
+        if keys[pygame.K_s]:
+            player.sit_down()
+        else:
+            if player.is_sitting:
+                player.stand_up(level_manager.current_level.get_all_game_objects())
+
+        if keys[pygame.K_a]:
+            player.move(-1)
+        if keys[pygame.K_d]:
+            player.move(1)
+        if keys[pygame.K_s]:
+            player.sit_down()
+            # Приседание (без проверки)
+            # Вставание (с проверкой)
+        elif player.is_sitting:
+            player.stand_up(level_manager.current_level.get_all_game_objects())  # передаем список всех объектов
+
+            # Автоматическое вставание при прыжке/движении
+            if (keys[pygame.K_SPACE] or
+                    (player.is_sitting and (keys[pygame.K_a] or keys[pygame.K_d]))):
+                player.stand_up(level_manager.current_level.get_all_game_objects())
+
+        if keys[pygame.K_SPACE]:
+            player.jump()
+
 
         # Обновление
         if not level_manager.current_level.completed:
-            player.update(level_manager.current_level)
+
 
             # Позиция камеры (следим за игроком)
             camera_offset[0] = SCREEN_WIDTH // 2 - player.rect.centerx
@@ -98,7 +126,7 @@ def main():
                     start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                     100, SCREEN_HEIGHT - 150)
-                    player = DemoPlayer(*start_pos)
+                    player, player_anim = create_player(*start_pos)
 
         # Отрисовка
         screen.fill(DARK_GREEN)
@@ -109,8 +137,12 @@ def main():
         screen.blit(level_surface, camera_offset)
 
         # Отрисовка игрока
-        player.draw(screen, camera_offset)
+        player_anim.update()
+        # В основном цикле отрисовки
+        player.apply_physics(level_manager.current_level.get_all_game_objects(), LEVEL_WIDTH, SCREEN_HEIGHT)
+        player_anim.draw(screen, camera_offset)
 
+        #player_anim.draw(screen)
         # UI
         info_y = 20
         for text in [

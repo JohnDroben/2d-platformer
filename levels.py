@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Type
 from custom_logging import Logger
 
+from Characters.type_object import ObjectType
+
 # Константы
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 960
@@ -42,6 +44,7 @@ class Bonus(GameObject):
     def __init__(self, position: Position, size: Size, points: int):
         super().__init__(position, size)
         self.points = points
+        self.object_type = ObjectType.COIN
 
     def collect(self) -> int:
         """Сбор бонуса"""
@@ -73,6 +76,7 @@ class Platform(GameObject):
         self.color = (100, 100, 100)  # Серый цвет
         self.has_hole = has_hole
         self.hole_rect = None
+        self.object_type = ObjectType.PLATFORM
         if has_hole:
             hole_width = random.randint(50, 150)
             hole_x = random.randint(50, width - hole_width - 50)
@@ -109,6 +113,7 @@ class Spike(Obstacle):
         super().__init__(position, size)
         self.color = (139, 0, 0)  # Темно-красный
         self.horizontal = horizontal
+        self.object_type = ObjectType.SPIKE
 
     def update(self):
         pass
@@ -138,6 +143,7 @@ class MovingPlatformHorizontal(Obstacle):
         self.speed = 2
         self.direction = 1
         self.color = (150, 75, 0)  # Коричневый
+        self.object_type = ObjectType.PLATFORM
 
     def update(self):
         self.rect.x += self.speed * self.direction
@@ -160,6 +166,7 @@ class MovingPlatformVertical(Obstacle):
         self.speed = 1
         self.direction = 1
         self.color = (150, 150, 150)  # Светло-серый
+        self.object_type = ObjectType.PLATFORM
 
     def update(self):
         self.rect.y += self.speed * self.direction
@@ -182,6 +189,7 @@ class CircularSaw(Obstacle):
         self.speed = 3
         self.direction = 1
         self.color = (200, 200, 200)  # Металлический
+        self.object_type = ObjectType.SPIKE
 
     def update(self):
         self.rect.y += self.speed * self.direction
@@ -236,6 +244,8 @@ class Portal(GameObject):
         self.color = (0, 255, 0) if is_finish else (255, 0, 0)
         self.animation_phase = 0
         self.active = not is_finish  # Стартовый портал всегда активен
+        self.object_type = ObjectType.DOOR
+
 
     def update(self):
         self.animation_phase = (self.animation_phase + 0.1) % 360
@@ -377,6 +387,22 @@ class Level(ABC):
     def get_active_artifacts_count(self) -> int:
         """Количество оставшихся артефактов"""
         return sum(1 for artifact in self.artifacts if artifact.is_active)
+
+    def get_all_game_objects(self) -> List[GameObject]:
+        """
+        Возвращает все игровые объекты в виде одного списка.
+
+        :return: Список, содержащий все игровые объекты.
+        """
+        # Объединяем все списки в один
+        all_objects = (
+                self.platforms +
+                self.obstacles +
+                self.bonuses +
+                self.artifacts +
+                self.portals
+        )
+        return all_objects
 
 
 class Level1(Level):

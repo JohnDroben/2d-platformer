@@ -2,7 +2,7 @@ import pygame
 
 from Characters.action import Action
 from Characters.type_object import ObjectType
-
+from custom_logging import Logger
 
 class Character:
    def __init__(self, x, y, width, height, speed, jump_force, gravity, ground_level):

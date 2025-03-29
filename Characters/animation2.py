@@ -79,8 +79,9 @@ class AnimatedObject:
       self.change_action(self.character.current_action)
       self.update_animation()
 
-   def draw(self, surface: pygame.Surface):
+   def draw(self, surface: pygame.Surface, camera_offset):
       """Отрисовывает текущий кадр"""
+      player_rect = self.character.rect.move(camera_offset[0], camera_offset[1])
       if self.current_action in self.frames:
          frames = self.frames[self.current_action]
          frame = frames[self.frame]
@@ -91,11 +92,11 @@ class AnimatedObject:
             self.direction = self.character.direction
 
          # Отрисовываем спрайт персонажа
-         surface.blit(frame, self.character.rect)
+         surface.blit(frame, player_rect)
 
       # Отрисовка хитбокса (только в режиме отладки)
       if self.draw_hitbox:
-         hitbox_surf = pygame.Surface((self.character.rect.w, self.character.rect.h), pygame.SRCALPHA)
+         hitbox_surf = pygame.Surface((player_rect.w, player_rect.h), pygame.SRCALPHA)
          pygame.draw.rect(hitbox_surf, (255, 0, 0, 50), hitbox_surf.get_rect())
          pygame.draw.rect(hitbox_surf, (255, 0, 0, 255), hitbox_surf.get_rect(), 1)
-         surface.blit(hitbox_surf, self.character.rect)
+         surface.blit(hitbox_surf, player_rect)
