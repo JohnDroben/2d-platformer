@@ -6,9 +6,9 @@ class ObjectType(Enum):
 #    PASSABLE_PLATFORM = auto()  # Платформа, сквозь которую можно прыгать снизу
     ENEMY = auto()         # Враг
     COIN = auto()          # Монетка/коллекционный предмет
-#    SPIKE = auto()         # Шипы/опасность
+    SPIKE = auto()         # Шипы/опасность
 #    CHECKPOINT = auto()    # Контрольная точка
-#    DOOR = auto()          # Дверь/переход между уровнями
+    DOOR = auto()          # Дверь/переход между уровнями
     PLAYER = auto()        # Игрок
 #    PROJECTILE = auto()    # Снаряд/пуля
 #    POWERUP = auto()       # Улучшение
@@ -23,7 +23,7 @@ class ObjectType(Enum):
             ObjectType.PLATFORM,
             ObjectType.ENEMY,
   #          ObjectType.SPIKE,
-  #          ObjectType.DOOR
+            ObjectType.DOOR
         ]
 
     @property

@@ -79,34 +79,7 @@ while running:
       if event.type == pygame.QUIT:
          running = False
 
-   # Управление
-   keys = pygame.key.get_pressed()
-   player.direction = 0
 
-   if keys[pygame.K_s]:
-      player.sit_down()
-   else:
-      if player.is_sitting:
-         player.stand_up(game_objects)
-
-   if keys[pygame.K_a]:
-      player.move(-1)
-   if keys[pygame.K_d]:
-      player.move(1)
-   if keys[pygame.K_s]:
-      player.sit_down()
-      # Приседание (без проверки)
-      # Вставание (с проверкой)
-   elif player.is_sitting:
-      player.stand_up(game_objects)  # передаем список всех объектов
-
-      # Автоматическое вставание при прыжке/движении
-      if (keys[pygame.K_SPACE] or
-              (player.is_sitting and (keys[pygame.K_a] or keys[pygame.K_d]))):
-         player.stand_up(game_objects)
-
-   if keys[pygame.K_SPACE]:
-      player.jump()
 
    # Обновление физики
 
