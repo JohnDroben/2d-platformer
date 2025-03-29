@@ -10,9 +10,9 @@ class SoundManager:
     def load_sounds(self):
         # Загрузка звуков
         self.sounds = {
-            'jump': pygame.mixer.Sound('assets/sounds/jump.wav'),
-            'coin': pygame.mixer.Sound('assets/sounds/coin.wav'),
-            'death': pygame.mixer.Sound('assets/sounds/death.wav')
+            'jump': pygame.mixer.Sound('assets/sounds/jump.mp3'),
+            'coin': pygame.mixer.Sound('assets/sounds/coin.mp3'),
+            'death': pygame.mixer.Sound('assets/sounds/death.mp3')
         }
 
         # Настройка громкости
