@@ -834,28 +834,43 @@ class DebugLevel(Level):
         platform_positions = [
             (100, SCREEN_HEIGHT - 150)]  # Нижний уровень
 
-
         # Создаем платформы с предсказуемыми ямами
         for i, (x, y) in enumerate(platform_positions):
-            has_hole = (i == 1)  # Яма только на средней платформе
+            has_hole = (i == 0)  # Яма только на первой платформе
             self.platforms.append(Platform((x, y), platform_width, has_hole))
 
             if has_hole:
                 platform = self.platforms[-1]
                 hole_width = 200
-                hole_x = platform.rect.x + 200  # Фиксированная позиция ямы
+                hole_x = platform.rect.x + 200
                 platform.hole_rect = pygame.Rect(
                     hole_x, platform.rect.y,
                     hole_width, PLATFORM_HEIGHT
                 )
 
-                # Лифт в яме
+                # Параметры лифта
                 lift_height = 30
-                self.obstacles.append(MovingPlatformVertical(
-                    (hole_x + hole_width // 2 - 50, SCREEN_HEIGHT - 150 - lift_height),
+                lift_width = 100
+
+                # Границы движения (от нижней до верхней платформы)
+                lowest_y = max(p.rect.y for p in self.platforms) - lift_height
+                highest_y = min(p.rect.y for p in self.platforms) - 150  # Оставляем место сверху
+
+                # Начальная позиция (внизу)
+                lift_x = hole_x + (hole_width - lift_width) // 2
+                start_y = lowest_y
+
+                # Диапазон движения
+                move_range = lowest_y - highest_y
+
+                # Создаем лифт
+                lift = MovingPlatformVertical(
+                    (lift_x, start_y),
                     lift_height,
-                    350  # Фиксированная высота движения
-                ))
+                    move_range
+                )
+                lift.speed = 2  # Явно задаем скорость
+                self.obstacles.append(lift)
 
         # Статические препятствия (все типы)
         self.obstacles.extend([
