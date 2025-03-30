@@ -88,8 +88,6 @@ class AnimatedObject:
       player_rect = self.character.rect.move(camera_offset[0], camera_offset[1])
 
       if self.current_action in self.frames:
-
-
          frames = self.frames[self.current_action]
          frame = frames[self.frame]
 
@@ -99,7 +97,6 @@ class AnimatedObject:
 
          if self.direction == -1:
             frame = pygame.transform.flip(frame, True, False)
-
 
          # Отрисовываем спрайт персонажа
          surface.blit(frame, player_rect)
