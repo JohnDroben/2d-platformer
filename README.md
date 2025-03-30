@@ -1,9 +1,46 @@
 # 2D Platformer
 Игра разработана на Python с использованием Pygame.
-![Gameplay Demo](Characters/demonstration.gif)
 
 ### Особенности
-Тестовый файл движения персонажа, обработки взаимодействия с обьектом, проигрыш анимации
+* Переработана Структура
+* Добавлены Интерфесы для работы с движением и обработкой
+````Cmd
+├── Interfaces/ # Обработчики взаимодействий
+----                 -------------         ------ ----
+--- collision_handler.py
+--- damage_handler.py
+--- jump_handler.py
+--- move_handler.py
+--- sit_down_handler.py
+````
+* Проверка коллизий происходит в ___collision_handler.py___
+* Класс __Character__ является родительским
+* Классы __Hero__ __Enemy__  наследуются от __Character__
+* Измененна группировка в __ObjectType__
+
+### Debag
+* Интегрировать в основной код
+* Обьекты типа __Enemy__ должны добавляться в _LevelManager_
+  (level_manager.add(obj))
+что бы правильно обрабатываться в __CollisionHandler__
+* Коллизии обрабатываются по типу _Игрок_->_Обьект_
+В зависимости от типа _solid_, _collectable_, _dangerous_
+происходит обработка
+* 1 Добавлено поле _health_  для __Hero__, __Enemy__
+* 2 Добавлены поля _score_, _artifact_ для __Hero__
+* Отрисовать Интерфейс Игры используя 1, 2 выше
+* Интерфейс ___DamageHandler___ на данный момент явл. заглушкой 
+в теории привязать к нему экран __GameOver__ а так же __death__ для классов __Hero__ __Enemy__
+
+### Изменения в _main.py_
+* ````python
+    def create_player(x, y):
+        player = Hero(...) # Было Character(...)
+    #----------------------------
+    # везде где были вызовы   player.stand_up(...)  
+    player.sit_handler.stand_up(...) # стало
+
+
 ### Реализованно
 * Движение вправо\влево
 * Прыжок
@@ -33,25 +70,3 @@ player_anim.load_action_frames(Action.IDLE, 'assets/sprites/idle.png', 7)
 * В классе Action файла action.py Указаны типы действий
 * ___Изменить Action  в соответсвии с дейстaвительностью___
 
-### Обьекты и типы
- ````python
- game_objects = [
-   GameObject(0, 550, 800, 50, ObjectType.PLATFORM, (100, 200, 100)),  # Пол
-   GameObject(200, 480, 100, 20, ObjectType.PLATFORM, (100, 200, 100)),  # Платформа 1
-   GameObject(400, 350, 100, 20, ObjectType.PLATFORM, (100, 200, 100)),  # Платформа 2
-   GameObject(100, 300, 40, 40, ObjectType.ENEMY, (200, 50, 50)),  # Враг
-   GameObject(400, 200, 20, 20, ObjectType.COIN, (255, 215, 0)),  # Монетка
-   GameObject(600, 250, 20, 20, ObjectType.COIN, (255, 215, 0))  # Монетка
-]
- ````
-* Тестовые обьекты 
-* Класс обьектов должен иметь поле  ___self.object_type : ObjectType___
-* Класс ___ObjectType___ определяет типы обьектов(нужно что бы игрок правильно взаимодействовал)
-* ___Изменить ObjectType в соответсвии с действительностью___
-
-### Для тестирования запустите файл _test.py_ подставив свои параметры
-
-## Установка
-```bash
-git clone https://github.com/JohnDroben/2d-platformer/tree/develop-
-pip install -r requirements.txt
