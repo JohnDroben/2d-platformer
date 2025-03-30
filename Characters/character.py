@@ -1,7 +1,9 @@
 import pygame
+from typing import cast
 
 from Characters.action import Action
 from Characters.type_object import ObjectType
+from levels import Platform
 from custom_logging import Logger
 
 class Character:
@@ -94,6 +96,16 @@ class Character:
       self.current_action = Action.IDLE
       return True
 
+   def is_fully_inside_horizontally(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
+      """
+      Проверяет, помещается ли rect1 полностью внутри rect2 по горизонтали.
+
+      :param rect1: Хитбокс первого объекта
+      :param rect2: Хитбокс второго объекта
+      :return: True, если rect1 полностью внутри rect2 по горизонтали, иначе False
+      """
+      return rect2.left <= rect1.left and rect1.right <= rect2.right
+
    def apply_physics(self, game_objects, screen_width, screen_height):
       # Гравитация и вертикальное движение
       prev_rect = self.rect.copy()  # Запоминаем позицию до движения
@@ -115,7 +127,19 @@ class Character:
          if self.rect.colliderect(obj.rect):
             # Платформы (физические коллизии)
             if obj.object_type == ObjectType.PLATFORM:
-               if not prev_rect.colliderect(obj.rect):
+
+               platform = cast(Platform, obj)  # Явное приведение типа
+               in_hole = False
+               holes = getattr(platform, 'holes', [])  #берём люки с платформы если они есть.
+               for hole in holes:
+                  Logger().debug(f"platform.holes:{hole.rect}")
+                  Logger().debug(f"self.rect:{self.rect}")
+                  if self.is_fully_inside_horizontally(self.rect, hole.rect):
+                     in_hole = True
+                     break
+
+               if not prev_rect.colliderect(obj.rect) and not in_hole:
+
                   if self.velocity_y > 0:  # Падение вниз
                      self.rect.bottom = obj.rect.top
                      self.velocity_y = 0
@@ -148,11 +172,30 @@ class Character:
          if self.rect.colliderect(obj.rect):
             # Блокировка движения через платформы
             if obj.object_type == ObjectType.PLATFORM:
-               if self.direction == 1:  # Вправо
-                  self.rect.right = obj.rect.left
 
-               elif self.direction == -1:  # Влево
-                  self.rect.left = obj.rect.right
+               platform = cast(Platform, obj)  # Явное приведение типа
+               in_hole = False
+               holes = getattr(platform, 'holes', [])  # берём люки с платформы если они есть.
+               for hole in holes:
+                  Logger().debug(f"platform.holes:{hole.rect}")
+                  Logger().debug(f"self.rect:{self.rect}")
+                  if self.is_fully_inside_horizontally(prev_rect, hole.rect):
+                     in_hole = True
+                     if self.direction == 1:  # Вправо
+                        if self.rect.right > hole.rect.right:
+                           Logger().debug(f"hole.rect.right:{hole.rect.right}")
+                           self.rect.right = hole.rect.right
+                     elif self.direction == -1:  # Влево
+                        if self.rect.left < hole.rect.left:
+                           Logger().debug(f"hole.rect.left:{hole.rect.left}")
+                           self.rect.left = hole.rect.left
+                     break
+               if not in_hole:
+                  if self.direction == 1:  # Вправо
+                     self.rect.right = obj.rect.left
+
+                  elif self.direction == -1:  # Влево
+                     self.rect.left = obj.rect.right
 
             # Горизонтальный контакт с врагом
             elif obj.object_type == ObjectType.ENEMY:
@@ -185,4 +228,4 @@ class Character:
 
       if abs(prev_rect.x - after_rect.x) > self.width or abs(prev_rect.y - after_rect.y) > self.height :
          Logger().debug(f"prev_rect: {prev_rect} after_rect: {after_rect}: {(prev_rect.x - after_rect.x)}")
-         Logger().error("сильное смещение")
+         Logger().error("Слишком больше смещение")

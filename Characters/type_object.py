@@ -17,7 +17,7 @@ class ObjectType(Enum):
     COIN = auto()  # Монета
     ARTIFACT = auto()  # Артефакт
     PORTAL = auto()  # Портал
-    HOLE = 8
+    HOLE = auto()
 #    CHECKPOINT = auto()    # Контрольная точка
 #    PROJECTILE = auto()    # Снаряд/пуля
 #    POWERUP = auto()       # Улучшение
