@@ -29,14 +29,10 @@ class ObjectType(Enum):
     def is_solid(self):
         """Является ли объект твердым (непроходимым)"""
         return self in [
-            ObjectType.ENEMY,
             ObjectType.PLATFORM,
             ObjectType.PASSABLE_PLATFORM,
             ObjectType.MOVING_PLATFORM,
             ObjectType.OBSTACLE,
-            ObjectType.SPIKE,
-            ObjectType.CIRCULAR_SAW,
-            ObjectType.PORTAL,
         ]
 
     @property
@@ -46,6 +42,7 @@ class ObjectType(Enum):
             ObjectType.ENEMY,
             ObjectType.SPIKE,
             ObjectType.CIRCULAR_SAW,
+            ObjectType.PIT
         ]
 
     @property

@@ -1,12 +1,12 @@
 import pygame
 import sys
+
+from Characters.Hero.hero import Hero
 from levels import LevelManager, LEVEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT
 from custom_logging import Logger
 
 from Characters.action import Action
-from Characters.character import Character
 from Characters.animation2 import AnimatedObject
-from Characters.type_object import ObjectType
 
 
 # Инициализация Pygame
@@ -29,7 +29,7 @@ ground_level = SCREEN_HEIGHT+200
 
 
 def create_player(x, y):
-    player = Character(
+    player = Hero(
         x=x,  # Стартовая позиция X (не привязывать к ground_level)
         y=y,  # Ставим на поверхность (ground_level - высота)
         width=60,  # Ширина hitbox (рекомендую уменьшить)
@@ -104,19 +104,19 @@ def main():
             player.sit_down()
         else:
             if player.is_sitting:
-                player.stand_up(level_manager.current_level.get_all_game_objects())
+                player.sit_handler.stand_up(level_manager.current_level.get_all_game_objects())
 
         if keys[pygame.K_s]:
             player.sit_down()
             # Приседание (без проверки)
             # Вставание (с проверкой)
         elif player.is_sitting:
-            player.stand_up(level_manager.current_level.get_all_game_objects())  # передаем список всех объектов
+            player.sit_handler.stand_up(level_manager.current_level.get_all_game_objects())  # передаем список всех объектов
 
             # Автоматическое вставание при прыжке/движении
             if (keys[pygame.K_SPACE] or
                     (player.is_sitting and (keys[pygame.K_a] or keys[pygame.K_d]))):
-                player.stand_up(level_manager.current_level.get_all_game_objects())
+                player.sit_handler.stand_up(level_manager.current_level.get_all_game_objects())
 
         if keys[pygame.K_a]:
             player.move(-1)
