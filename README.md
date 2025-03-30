@@ -74,3 +74,4 @@ player_anim.load_action_frames(Action.IDLE, 'assets/sprites/idle.png', 7)
 ## 📥 Как получить эту версию
 ```bash
 git clone -b physics https://github.com/JohnDroben/2d-platformer.git
+pip install -r requirements.txt
