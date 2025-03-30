@@ -152,7 +152,8 @@ def main():
                 player = Hero(start_pos)
 
             # Сбор бонусов и артефактов
-            level_manager.current_level.collect_bonuses(player.rect)
+            collected_points = level_manager.current_level.collect_bonuses(player.rect)
+            level_manager.current_level.score += collected_points  # Добавляем очки к уровню
             level_manager.current_level.collect_artifacts(player.rect)
 
             # Проверка финиша

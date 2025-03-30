@@ -111,6 +111,10 @@ class Coin(Bonus):
         self.sprite = coin_sprite
         self.sprite = pygame.transform.scale(self.sprite, (16, 16))
 
+    def collect(self) -> int:
+        self.is_active = False
+        return self.points  # Например, return 100
+
     def update(self):
         """Обновление состояния монеты (пустое, так как монета не движется)"""
         pass
@@ -582,9 +586,10 @@ class Level(ABC):
     def collect_bonuses(self, player_rect: pygame.Rect) -> int:
         """Сбор бонусов игроком"""
         collected_points = 0
-        for bonus in self.bonuses:
+        for bonus in self.bonuses[:]:  # Используем копию списка для безопасного удаления
             if bonus.is_active and bonus.check_collision(player_rect):
                 collected_points += bonus.collect()
+                self.bonuses.remove(bonus)  # Удаляем собранный бонус
         return collected_points
 
     def collect_artifacts(self, player_rect: pygame.Rect) -> bool:
@@ -655,7 +660,7 @@ class Level1(Level):
         self.exit_checked = False
         self.used_x_positions = []  # Для хранения занятых позиций по X
 
-    def get_valid_x_position(self, width: int, min_distance: int = 400) -> int:
+    def get_valid_x_position(self, width: int, min_distance: int = 500) -> int:
         """Генерирует X-позицию с минимальным расстоянием от других объектов"""
         max_attempts = 20
         for _ in range(max_attempts):
@@ -680,7 +685,7 @@ class Level1(Level):
 
         # Общие параметры генерации
         OBJECT_X_MARGIN = 50  # Отступ от краев платформы
-        MIN_DISTANCE = 500  # Минимальное расстояние между объектами
+        MIN_DISTANCE = 1000  # Минимальное расстояние между объектами
 
         # Основные платформы
         platform_positions = [
@@ -694,7 +699,7 @@ class Level1(Level):
         # Генерация HoleWithLift для среднего и верхнего уровня
         for platform in [middle, upper]:
             for _ in range(3):
-                hole_x = self.get_valid_x_position(120)
+                hole_x = self.get_valid_x_position(MIN_DISTANCE)
                 hole = HoleWithLift(
                     platform=platform,
                     width=120,
@@ -708,7 +713,7 @@ class Level1(Level):
         # Для КАЖДОЙ платформы (нижняя, средняя, верхняя) добавляем:
         for platform in [lower, middle, upper]:
             for _ in range(3):
-                x = self.get_valid_x_position(300)
+                x = self.get_valid_x_position(MIN_DISTANCE)
                 y = platform.rect.y - random.randint(50, 150)
                 self.obstacles.append(Spike((x, platform.rect.y - 16), True))
 
@@ -728,14 +733,14 @@ class Level1(Level):
 
         # Генерация дисковых пил (CircularSaw)
         for _ in range(4):  # 3 пилы на уровне
-            x = self.get_valid_x_position(500)
+            x = self.get_valid_x_position(MIN_DISTANCE)
             y = random.choice([middle.rect.y - 150, upper.rect.y - 200])
             move_range = random.randint(80, 150)
             self.obstacles.append(CircularSaw((x, y), move_range))
 
         # Генерация вертикальных стен
         for _ in range(2):
-            x = self.get_valid_x_position(300)
+            x = self.get_valid_x_position(MIN_DISTANCE)
             height = random.randint(100, 200)
             self.obstacles.append(
                 StaticVerticalPlatform((x, middle.rect.y - height), height)
