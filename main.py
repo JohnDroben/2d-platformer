@@ -25,7 +25,7 @@ DARK_GREEN = (20, 30, 15)
 font = pygame.font.SysFont('Arial', 24)
 large_font = pygame.font.SysFont('Arial', 72)  # Для Game Over текста
 
-ground_level = SCREEN_HEIGHT
+ground_level = SCREEN_HEIGHT+200
 
 
 def create_player(x, y):
@@ -58,6 +58,8 @@ def main():
     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (100, SCREEN_HEIGHT - 150)
     player, player_anim = create_player(*start_pos)
 
+    Logger().debug(f"INIT_CREATE: start_pos:{start_pos}")
+
     # Камера
     camera_offset = [0, 0]
     running = True
@@ -80,6 +82,17 @@ def main():
                         start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                         100, SCREEN_HEIGHT - 150)
                         player, player_anim = create_player(*start_pos)
+                        Logger().debug(f"NEW_LEVEL: start_pos:{start_pos}")
+                elif event.key == pygame.K_r and game_over:  # Рестарт по нажатию R
+                    # Сброс игры
+                    level_manager.reset()
+                    start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
+                    start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
+                        100, SCREEN_HEIGHT - 150)
+                    player, player_anim = create_player(*start_pos)
+                    Logger().debug(f"RESTART_GAME: start_pos:{start_pos}")
+                    level_manager.current_level.remove_start_portal()  # Добавляем удаление портала
+                    game_over = False
 
             # Управление
         keys = pygame.key.get_pressed()
@@ -108,31 +121,37 @@ def main():
                 player.stand_up(level_manager.current_level.get_all_game_objects())
 
         if keys[pygame.K_SPACE]:
+
             player.jump()
 
 
         # Обновление
         if not level_manager.current_level.completed:
-            player.update(level_manager.current_level)
+            # Отрисовка игрока
+            player_anim.update()
+            # В основном цикле отрисовки
+            player.apply_physics(level_manager.current_level.get_all_game_objects(), LEVEL_WIDTH, SCREEN_HEIGHT)
+
+
 
             # Проверка падения за экран (Game Over)
             if player.rect.top > SCREEN_HEIGHT:
                 game_over = True
-
+            """
             # Проверка опасных столкновений
             if level_manager.current_level.check_hazard_collision(player.rect):
                 # Респавн при смерти
                 start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                 start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                     100, SCREEN_HEIGHT - 150)
-                player = Player(*start_pos)
+                player, player_anim = create_player(*start_pos)
 
             # Проверка падения в яму
             if level_manager.current_level.check_fall_into_pit(player.rect):
                 start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                 start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                     100, SCREEN_HEIGHT - 150)
-                player = Player(*start_pos)
+                player, player_anim = create_player(*start_pos)
 
             # Сбор бонусов и артефактов
             level_manager.current_level.collect_bonuses(player.rect)
@@ -142,7 +161,7 @@ def main():
             if level_manager.current_level.check_finish(player.rect):
                 level_manager.current_level.completed = True
                 level_manager.current_level.completion_time = pygame.time.get_ticks()
-
+            """
             # Позиция камеры
             camera_offset[0] = SCREEN_WIDTH // 2 - player.rect.centerx
             camera_offset[0] = max(min(camera_offset[0], 0), SCREEN_WIDTH - LEVEL_WIDTH)
@@ -156,6 +175,7 @@ def main():
                     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                     100, SCREEN_HEIGHT - 150)
                     player, player_anim = create_player(*start_pos)
+                    Logger().debug(f"NEW_LEVEL: start_pos:{start_pos}")
 
         # Отрисовка
         screen.fill(DARK_GREEN)
@@ -166,9 +186,6 @@ def main():
         screen.blit(level_surface, camera_offset)
 
         # Отрисовка игрока
-        player_anim.update()
-        # В основном цикле отрисовки
-        player.apply_physics(level_manager.current_level.get_all_game_objects(), LEVEL_WIDTH, SCREEN_HEIGHT)
         player_anim.draw(screen, camera_offset)
 
         #player_anim.draw(screen)

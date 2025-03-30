@@ -2,7 +2,7 @@ import pygame
 import random
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Type
-from enum import Enum, auto
+from Characters.type_object import ObjectType
 from custom_logging import Logger
 
 # Константы
@@ -45,20 +45,6 @@ artifact_sprite = load_sprite("artifact", (255, 215, 0))
 portal_sprite = load_sprite("portal", (0, 255, 0))
 vertical_platform_sprite = load_sprite("vertical_platform", (120, 120, 120))
 horizontal_platform_sprite = load_sprite("horizontal_platform", (120, 120, 120))
-
-
-class ObjectType(Enum):
-    """Типы игровых объектов для определения взаимодействий"""
-    PLAYER = auto()  # Игрок
-    PLATFORM = auto()  # Платформа
-    OBSTACLE = auto()  # Препятствие
-    SPIKE = auto()  # Шипы
-    MOVING_PLATFORM = auto()  # Движущаяся платформа
-    CIRCULAR_SAW = auto()  # Дисковая пила
-    COIN = auto()  # Монета
-    ARTIFACT = auto()  # Артефакт
-    PORTAL = auto()  # Портал
-    PIT = auto()  # Яма
 
 
 class GameObject(ABC):

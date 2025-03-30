@@ -33,6 +33,7 @@ class Character:
             self.current_action = Action.IDLE
 
    def jump(self):
+
       if self.on_ground and not self.is_sitting:
          self.velocity_y = -self.jump_force
          self.on_ground = False
@@ -90,10 +91,10 @@ class Character:
 
    def apply_physics(self, game_objects, screen_width, screen_height):
       # Гравитация и вертикальное движение
+      prev_rect = self.rect.copy()  # Запоминаем позицию до движения
       self.velocity_y += self.gravity
       self.rect.y += self.velocity_y
       self.on_ground = False
-
       # Ограничение по горизонтали
       if self.rect.left < 0:
          self.rect.left = 0
@@ -104,20 +105,20 @@ class Character:
       if self.rect.top < 0:
          self.rect.top = 0
          self.velocity_y = 0  # Сбрасываем скорость при ударе о верх
-
       # Обработка вертикальных коллизий
       for obj in game_objects:
          if self.rect.colliderect(obj.rect):
             # Платформы (физические коллизии)
             if obj.object_type == ObjectType.PLATFORM:
-               if self.velocity_y > 0:  # Падение вниз
-                  self.rect.bottom = obj.rect.top
-                  self.velocity_y = 0
-                  self.on_ground = True
-                  self.can_double_jump = False
-               elif self.velocity_y < 0:  # Движение вверх
-                  self.rect.top = obj.rect.bottom
-                  self.velocity_y = 0
+               if not prev_rect.colliderect(obj.rect):
+                  if self.velocity_y > 0:  # Падение вниз
+                     self.rect.bottom = obj.rect.top
+                     self.velocity_y = 0
+                     self.on_ground = True
+                     self.can_double_jump = False
+                  elif self.velocity_y < 0:  # Движение вверх
+                     self.rect.top = obj.rect.bottom
+                     self.velocity_y = 0
 
             # Враги (тxриггер)
             elif obj.object_type == ObjectType.ENEMY:
@@ -133,7 +134,6 @@ class Character:
          self.velocity_y = 0
          self.on_ground = True
 
-
       # Горизонтальное движение и коллизии
       prev_x = self.rect.x  # Запоминаем позицию до движения
       self.rect.x += self.speed * self.direction
@@ -145,6 +145,7 @@ class Character:
             if obj.object_type == ObjectType.PLATFORM:
                if self.direction == 1:  # Вправо
                   self.rect.right = obj.rect.left
+
                elif self.direction == -1:  # Влево
                   self.rect.left = obj.rect.right
 
@@ -152,7 +153,6 @@ class Character:
             elif obj.object_type == ObjectType.ENEMY:
                #self.take_damage(20)
                self.rect.x = prev_x  # Отмена движения
-
       # Отдельный проход для триггеров (монетки, бонусы)
       for obj in game_objects[:]:  # Копия списка для безопасного удаления
          if self.rect.colliderect(obj.rect):
@@ -163,11 +163,9 @@ class Character:
             #    #self.heal(25)
             #    game_objects.remove(obj)
 
-
       # Автоматический подъем при движении/прыжке
       if self.is_sitting and (not self.on_ground or abs(self.velocity_y) > 0):
          self.stand_up(game_objects)
-
       # Автоматический сброс анимации прыжка при приземлении
       if self.on_ground:
          if self.current_action == Action.JUMP:
@@ -177,3 +175,9 @@ class Character:
          # Если в воздухе, но действие не прыжок
          if self.current_action != Action.JUMP:
             self.current_action = Action.JUMP
+
+      after_rect = self.rect
+      
+      if abs(prev_rect.x - after_rect.x) > 60:
+         Logger().debug(f"prev_rect: {prev_rect} after_rect: {after_rect}: {(prev_rect.x - after_rect.x)}")
+         Logger().error("сильное смещение")

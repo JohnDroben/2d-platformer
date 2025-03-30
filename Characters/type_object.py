@@ -2,14 +2,23 @@ from enum import Enum, auto
 
 class ObjectType(Enum):
     """Класс для типов игровых объектов"""
-    PLATFORM = auto()      # Твердая платформа
-#    PASSABLE_PLATFORM = auto()  # Платформа, сквозь которую можно прыгать снизу
-    ENEMY = auto()         # Враг
-    COIN = auto()          # Монетка/коллекционный предмет
-    SPIKE = auto()         # Шипы/опасность
+    PLAYER = auto()  # Игрок
+    ENEMY = auto()  # Враг
+
+    PLATFORM = auto()  # Платформа
+    PASSABLE_PLATFORM = auto()  # Платформа, сквозь которую можно прыгать снизу
+    MOVING_PLATFORM = auto()  # Движущаяся платформа
+    OBSTACLE = auto()  # Препятствие
+    PIT = auto()  # Яма
+
+    SPIKE = auto()  # Шипы
+    CIRCULAR_SAW = auto()  # Дисковая пила
+
+    COIN = auto()  # Монета
+    ARTIFACT = auto()  # Артефакт
+    PORTAL = auto()  # Портал
+
 #    CHECKPOINT = auto()    # Контрольная точка
-    DOOR = auto()          # Дверь/переход между уровнями
-    PLAYER = auto()        # Игрок
 #    PROJECTILE = auto()    # Снаряд/пуля
 #    POWERUP = auto()       # Улучшение
 
@@ -20,10 +29,14 @@ class ObjectType(Enum):
     def is_solid(self):
         """Является ли объект твердым (непроходимым)"""
         return self in [
-            ObjectType.PLATFORM,
             ObjectType.ENEMY,
-  #          ObjectType.SPIKE,
-            ObjectType.DOOR
+            ObjectType.PLATFORM,
+            ObjectType.PASSABLE_PLATFORM,
+            ObjectType.MOVING_PLATFORM,
+            ObjectType.OBSTACLE,
+            ObjectType.SPIKE,
+            ObjectType.CIRCULAR_SAW,
+            ObjectType.PORTAL,
         ]
 
     @property
@@ -31,8 +44,8 @@ class ObjectType(Enum):
         """Является ли объект опасным"""
         return self in [
             ObjectType.ENEMY,
-  #          ObjectType.SPIKE,
-   #         ObjectType.PROJECTILE
+            ObjectType.SPIKE,
+            ObjectType.CIRCULAR_SAW,
         ]
 
     @property
@@ -40,6 +53,6 @@ class ObjectType(Enum):
         """Можно ли собрать объект"""
         return self in [
             ObjectType.COIN,
-   #         ObjectType.POWERUP,
+            ObjectType.ARTIFACT,
    #         ObjectType.CHECKPOINT
         ]
