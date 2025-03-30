@@ -2,6 +2,8 @@
 from typing import Tuple
 import pygame
 from Characters.action import Action
+from Characters.character import  Character
+from Characters.animation2 import AnimatedObject
 from levels import GameObject
 from Characters.type_object import ObjectType
 from custom_logging import Logger
@@ -45,7 +47,7 @@ class AnimatedCharacter(GameObject):
             gravity=gravity,
             ground_level=ground_level
         )
-
+        self.rect = self.character.rect
         # Создание AnimatedObject
         self.animated_object = AnimatedObject(self.character)
 
@@ -67,13 +69,23 @@ class AnimatedCharacter(GameObject):
         """Делегирование прыжка Character"""
         self.character.jump()
 
+    def sit_down(self):
+        """Делегирование присаживание Character"""
+        self.character.sit_down()
+
+    def is_sitting(self):
+        return self.character.is_sitting
+
+    def stand_up(self, platforms):
+        """Делегирование вставание Character"""
+        self.character.stand_up(platforms)
+
     def apply_physics(self, game_objects, screen_width, screen_height):
         """Делегирование физики Character"""
         self.character.apply_physics(game_objects, screen_width, screen_height)
 
     def update(self):
         """Обновление состояния объекта"""
-        self.character.update()
         self.animated_object.update()
 
     def draw(self, surface: pygame.Surface, camera_offset: Tuple[int, int]):
