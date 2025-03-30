@@ -13,7 +13,7 @@ class Hero(AnimatedCharacter):
         ground_level: int = 2000,
         size: Tuple[int, int] = (60, 80),
         speed: float = 8.0,
-        jump_force: float = 12,
+        jump_force: float = 25,
         gravity: float = 0.6,
         obj_type: ObjectType = ObjectType.PLAYER
     ):
