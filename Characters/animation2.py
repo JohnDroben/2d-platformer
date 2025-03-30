@@ -1,7 +1,7 @@
 import pygame
 from Characters.action import Action
 from Characters.character import Character
-
+from custom_logging import Logger
 
 class AnimatedObject:
    def __init__(self, character: Character):
@@ -20,7 +20,7 @@ class AnimatedObject:
          Action.MOVE: {0: Action.MOVE}
       }
 
-   def load_action_frames(self, action: Action, file_path: str, frame_count: int):
+   def load_action_frames(self, action: Action, file_path: str, frame_count: int, sit_frames: bool = False):
       """Загружает кадры для конкретного действия"""
       sprite_sheet = pygame.image.load(file_path).convert_alpha()
       frame_width = sprite_sheet.get_width() // frame_count
@@ -29,7 +29,10 @@ class AnimatedObject:
       frames = []
       for i in range(frame_count):
          frame = sprite_sheet.subsurface(pygame.Rect(i * frame_width, 0, frame_width, frame_height))
-         frame = pygame.transform.scale(frame, (self.character.width, self.character.height))
+         if sit_frames:
+            frame = pygame.transform.scale(frame, (self.character.width, self.character.sit_height))
+         else:
+            frame = pygame.transform.scale(frame, (self.character.width, self.character.height))
          frames.append(frame)
 
       self.frames[action] = frames
@@ -70,6 +73,7 @@ class AnimatedObject:
    def change_action(self, new_action: Action):
       """Меняет текущее действие"""
       if new_action != self.current_action and new_action in self.frames:
+         Logger().debug(f"Change_action to: {new_action}")
          self.current_action = new_action
          self.frame = 0
          self.sound_played_for_frame.clear()  # Сбрасываем флаги звуков
@@ -84,6 +88,8 @@ class AnimatedObject:
       player_rect = self.character.rect.move(camera_offset[0], camera_offset[1])
 
       if self.current_action in self.frames:
+
+
          frames = self.frames[self.current_action]
          frame = frames[self.frame]
 

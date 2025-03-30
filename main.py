@@ -42,8 +42,12 @@ def create_player(x, y):
     player_anim = AnimatedObject(player)
     # Для каждого действия указываем файл и количество кадров
     player_anim.load_action_frames(Action.IDLE, 'Characters/assets/sprites/idle.png', 7)
-    # player_anim.load_action_frames('move', 'assets/run.png', 6)
+    player_anim.load_action_frames(Action.MOVE, 'Characters/assets/sprites/idle.png', 7)
+
     player_anim.load_action_frames(Action.JUMP, 'Characters/assets/sprites/jump.png', 13)
+    player_anim.load_action_frames(Action.SIT, 'Characters/assets/sprites/sit.png', 4, True)
+    player_anim.load_action_frames(Action.SIT_MOVE, 'Characters/assets/sprites/sit.png', 4, True)
+    player_anim.load_action_frames(Action.SIT_IDLE, 'Characters/assets/sprites/sit.png', 4, True)
     return player, player_anim
 
 
@@ -96,18 +100,12 @@ def main():
 
             # Управление
         keys = pygame.key.get_pressed()
-        player.move(0)
-
         if keys[pygame.K_s]:
             player.sit_down()
         else:
             if player.is_sitting:
                 player.stand_up(level_manager.current_level.get_all_game_objects())
 
-        if keys[pygame.K_a]:
-            player.move(-1)
-        if keys[pygame.K_d]:
-            player.move(1)
         if keys[pygame.K_s]:
             player.sit_down()
             # Приседание (без проверки)
@@ -120,8 +118,14 @@ def main():
                     (player.is_sitting and (keys[pygame.K_a] or keys[pygame.K_d]))):
                 player.stand_up(level_manager.current_level.get_all_game_objects())
 
-        if keys[pygame.K_SPACE]:
+        if keys[pygame.K_a]:
+            player.move(-1)
+        elif keys[pygame.K_d]:
+            player.move(1)
+        else:
+            player.move(0)
 
+        if keys[pygame.K_SPACE]:
             player.jump()
 
         # Обновление

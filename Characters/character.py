@@ -26,10 +26,16 @@ class Character:
       self.direction = direction
       if direction != 0:
          if self.on_ground:  # Меняем анимацию только на земле
-            self.current_action = Action.MOVE
+            if self.is_sitting:
+               self.current_action = Action.SIT_MOVE
+            else:
+               self.current_action = Action.MOVE
       else:
          if self.on_ground:
-            self.current_action = Action.IDLE
+            if self.is_sitting:
+               self.current_action = Action.SIT_IDLE
+            else:
+               self.current_action = Action.IDLE
 
    def jump(self):
 

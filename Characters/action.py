@@ -6,6 +6,8 @@ class Action(Enum):
     MOVE = auto()
     JUMP = auto()
     SIT = auto()
+    SIT_MOVE = auto()
+    SIT_IDLE = auto()
 #    FALL = auto()
 #    ATTACK = auto()
 #    HURT = auto()
