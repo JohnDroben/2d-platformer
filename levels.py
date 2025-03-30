@@ -2,7 +2,7 @@ import pygame
 import random
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Type
-from enum import Enum, auto
+from Characters.type_object import ObjectType
 from custom_logging import Logger
 
 # Константы
@@ -45,20 +45,6 @@ artifact_sprite = load_sprite("artifact", (255, 215, 0))
 portal_sprite = load_sprite("portal", (0, 255, 0))
 vertical_platform_sprite = load_sprite("vertical_platform", (120, 120, 120))
 horizontal_platform_sprite = load_sprite("horizontal_platform", (120, 120, 120))
-
-
-class ObjectType(Enum):
-    """Типы игровых объектов для определения взаимодействий"""
-    PLAYER = auto()  # Игрок
-    PLATFORM = auto()  # Платформа
-    OBSTACLE = auto()  # Препятствие
-    SPIKE = auto()  # Шипы
-    MOVING_PLATFORM = auto()  # Движущаяся платформа
-    CIRCULAR_SAW = auto()  # Дисковая пила
-    COIN = auto()  # Монета
-    ARTIFACT = auto()  # Артефакт
-    PORTAL = auto()  # Портал
-    PIT = auto()  # Яма
 
 
 class GameObject(ABC):
@@ -584,6 +570,22 @@ class Level(ABC):
         """Количество оставшихся артефактов"""
         return sum(1 for artifact in self.artifacts if artifact.is_active)
 
+    def get_all_game_objects(self) -> List[GameObject]:
+        """
+        Возвращает все игровые объекты в виде одного списка.
+
+        :return: Список, содержащий все игровые объекты.
+        """
+        # Объединяем все списки в один
+        all_objects = (
+                self.platforms +
+                self.obstacles +
+                self.bonuses +
+                self.artifacts +
+                self.portals
+        )
+        return all_objects
+
 
 class Level1(Level):
     """Первый уровень - увеличенное количество препятствий"""
@@ -643,13 +645,28 @@ class Level1(Level):
                                            if p != start_platform and p != finish_platform])
         self.artifacts.append(Artifact((artifact_platform.rect.x + 200, artifact_platform.rect.y - 50)))
 
-        # Увеличенное количество шипов в ямах (в 2 раза больше)
+        # Добавляем лифты в ямы
         for platform in self.platforms:
             if platform.has_hole and platform.hole_rect:
-                # Добавляем 2-3 шипа в каждую яму вместо 1
+                # Добавляем шипы в ямы
                 for _ in range(random.randint(2, 3)):
                     offset = random.randint(-10, 10)
                     self.obstacles.append(Spike((platform.hole_rect.x + offset, platform.hole_rect.y - 32)))
+
+                # Добавляем лифт в яму
+                lift_height = 30  # Высота платформы лифта
+                # Диапазон движения - от нижней платформы до верхней
+                lowest_platform_y = max(p.rect.y for p in self.platforms)
+                highest_platform_y = min(p.rect.y for p in self.platforms)
+                move_range = highest_platform_y - lowest_platform_y - lift_height
+
+                # Центрируем лифт в яме
+                lift_x = platform.hole_rect.centerx - 50
+                self.obstacles.append(MovingPlatformVertical(
+                    (lift_x, lowest_platform_y - lift_height),
+                    lift_height,
+                    move_range
+                ))
 
         # Увеличенное количество горизонтальных шипов (в 3 раза больше)
         for platform in self.platforms:
@@ -657,17 +674,10 @@ class Level1(Level):
                 x = random.randint(platform.rect.x + 50, platform.rect.x + platform.rect.width - 50)
                 self.obstacles.append(Spike((x, platform.rect.y - 16), True))
 
-        # Увеличенное количество движущихся платформ (в 2 раза больше)
-        for i in range(4):  # Было 2, стало 4
-            x = random.randint(200, LEVEL_WIDTH - 200)
-            y = random.randint(100, SCREEN_HEIGHT - 200)
-            self.obstacles.append(MovingPlatformHorizontal((x, y), 100, random.randint(100, 200)))
-
-        # Увеличенное количество лифтов (в 2 раза больше)
-        for i in range(2):  # Было 1, стало 2
-            x = random.randint(300, LEVEL_WIDTH - 300)
-            y = random.randint(100, SCREEN_HEIGHT - 300)
-            self.obstacles.append(MovingPlatformVertical((x, y), 50, random.randint(80, 150)))
+        # Увеличенное количество движущихся платформ (только горизонтальные)
+        #for i in range(4):  # Было 2, стало 4
+         #  y = random.randint(100, SCREEN_HEIGHT - 200)
+          #  self.obstacles.append(MovingPlatformHorizontal((x, y), 100, random.randint(100, 200)))
 
         # Увеличенное количество дисковых пил (в 3 раза больше)
         for i in range(3):  # Было 1, стало 3
@@ -695,10 +705,10 @@ class Level2(Level1):
         self.artifacts.append(Artifact((artifact_platform.rect.x + 300, artifact_platform.rect.y - 50)))
 
         # Дополнительные движущиеся платформы (6 всего)
-        for i in range(2):  # Уже 4 от Level1, добавляем еще 2
-            x = random.randint(200, LEVEL_WIDTH - 200)
-            y = random.randint(100, SCREEN_HEIGHT - 200)
-            self.obstacles.append(MovingPlatformHorizontal((x, y), 80, random.randint(150, 250)))
+        #for i in range(2):  # Уже 4 от Level1, добавляем еще 2
+            #x = random.randint(200, LEVEL_WIDTH - 200)
+            #y = random.randint(100, SCREEN_HEIGHT - 200)
+           # self.obstacles.append(MovingPlatformHorizontal((x, y), 80, random.randint(150, 250)))
 
         # Дополнительные пилы (5 всего)
         for i in range(2):  # Уже 3 от Level1, добавляем еще 2
@@ -706,7 +716,7 @@ class Level2(Level1):
             y = random.randint(150, SCREEN_HEIGHT - 250)
             self.obstacles.append(CircularSaw((x, y), random.randint(200, 300)))
 
-        # Ямы на средних платформах с шипами
+        # Ямы на средних платформах с шипами и лифтами
         for platform in self.platforms:
             if platform.rect.y == SCREEN_HEIGHT - 150 - PLATFORM_GAP and not platform.has_hole:
                 platform.has_hole = True
@@ -722,6 +732,19 @@ class Level2(Level1):
                 for _ in range(random.randint(2, 3)):
                     offset = random.randint(-15, 15)
                     self.obstacles.append(Spike((platform.hole_rect.x + offset, platform.hole_rect.y - 32)))
+
+                # Добавляем лифт в яму
+                lift_height = 30
+                lowest_platform_y = max(p.rect.y for p in self.platforms)
+                highest_platform_y = min(p.rect.y for p in self.platforms)
+                move_range = highest_platform_y - lowest_platform_y - lift_height
+
+                lift_x = platform.hole_rect.centerx - 50
+                self.obstacles.append(MovingPlatformVertical(
+                    (lift_x, lowest_platform_y - lift_height),
+                    lift_height,
+                    move_range
+                ))
 
         # Дополнительные горизонтальные шипы
         for platform in self.platforms:
@@ -743,7 +766,7 @@ class Level3(Level2):
                                            and p.rect.y != self.artifacts[1].rect.y + 50])
         self.artifacts.append(Artifact((artifact_platform.rect.x + 400, artifact_platform.rect.y - 50)))
 
-        # Ямы на верхних платформах с шипами
+        # Ямы на верхних платформах с шипами и лифтами
         for platform in self.platforms:
             if platform.rect.y == SCREEN_HEIGHT - 150 - 2 * PLATFORM_GAP and not platform.has_hole:
                 platform.has_hole = True
@@ -759,6 +782,19 @@ class Level3(Level2):
                 for _ in range(random.randint(3, 4)):
                     offset = random.randint(-20, 20)
                     self.obstacles.append(Spike((platform.hole_rect.x + offset, platform.hole_rect.y - 32)))
+
+                # Добавляем лифт в яму
+                lift_height = 30
+                lowest_platform_y = max(p.rect.y for p in self.platforms)
+                highest_platform_y = min(p.rect.y for p in self.platforms)
+                move_range = highest_platform_y - lowest_platform_y - lift_height
+
+                lift_x = platform.hole_rect.centerx - 50
+                self.obstacles.append(MovingPlatformVertical(
+                    (lift_x, lowest_platform_y - lift_height),
+                    lift_height,
+                    move_range
+                ))
 
         # Увеличение скорости всех опасных объектов
         for obstacle in self.obstacles:
@@ -784,89 +820,173 @@ class Level3(Level2):
                 self.obstacles.append(Spike((platform.rect.x + 16, y), False))
 
 
-class LevelManager:
-    """Менеджер уровней"""
+class DebugLevel(Level):
+    """Отладочный уровень со всеми элементами для тестирования"""
 
-    def __init__(self):
+    def generate_level(self):
+        """Генерация отладочного уровня со статичными объектами"""
+        self.width = LEVEL_WIDTH
+        self.height = SCREEN_HEIGHT
+        self.artifacts_required = 1  # Только 1 артефакт для теста
+
+        # Основные платформы (3 уровня)
+        platform_width = 1024
+        platform_positions = [
+            (100, SCREEN_HEIGHT - 150)]  # Нижний уровень
+
+        # Создаем платформы с предсказуемыми ямами
+        for i, (x, y) in enumerate(platform_positions):
+            has_hole = (i == 0)  # Яма только на первой платформе
+            self.platforms.append(Platform((x, y), platform_width, has_hole))
+
+            if has_hole:
+                platform = self.platforms[-1]
+                hole_width = 200
+                hole_x = platform.rect.x + 200
+                platform.hole_rect = pygame.Rect(
+                    hole_x, platform.rect.y,
+                    hole_width, PLATFORM_HEIGHT
+                )
+
+                # Параметры лифта
+                lift_height = 30
+                lift_width = 100
+
+                # Границы движения (от нижней до верхней платформы)
+                lowest_y = max(p.rect.y for p in self.platforms) - lift_height
+                highest_y = min(p.rect.y for p in self.platforms) - 150  # Оставляем место сверху
+
+                # Начальная позиция (внизу)
+                lift_x = hole_x + (hole_width - lift_width) // 2
+                start_y = lowest_y
+
+                # Диапазон движения
+                move_range = lowest_y - highest_y
+
+                # Создаем лифт
+                lift = MovingPlatformVertical(
+                    (lift_x, start_y),
+                    lift_height,
+                    move_range
+                )
+                lift.speed = 2  # Явно задаем скорость
+                self.obstacles.append(lift)
+
+        # Статические препятствия (все типы)
+        self.obstacles.extend([
+            # Вертикальные стены
+            StaticVerticalPlatform((500, SCREEN_HEIGHT - 350), 50),
+
+            # Горизонтальные платформы
+            StaticHorizontalPlatform((500, SCREEN_HEIGHT - 200), 100),
+
+            # Шипы
+            Spike((350, SCREEN_HEIGHT - 180)),  # Вертикальные
+            Spike((600, SCREEN_HEIGHT - 180), True),  # Горизонтальные
+
+            # Дисковая пила (1 штука)
+            CircularSaw((700, SCREEN_HEIGHT - 250), 200)
+        ])
+
+        # Бонусы и артефакты
+        self.bonuses.extend([
+            Coin((200, SCREEN_HEIGHT - 200)),
+            Coin((250, SCREEN_HEIGHT - 200)),
+            Coin((300, SCREEN_HEIGHT - 300))
+        ])
+        self.artifacts.append(Artifact((400, SCREEN_HEIGHT - 200)))
+
+        # Портал старта и финиша
+        self.portals.extend([
+            Portal((150, SCREEN_HEIGHT - 250), False),  # Старт
+            Portal((650, SCREEN_HEIGHT - 250), True)  # Финиш
+        ])
+
+
+class LevelManager:
+    # Классы уровней (теперь это атрибут класса)
+    level_classes = {
+        1: Level1,
+        2: Level2,
+        3: Level3,
+        0: DebugLevel  # Отладочный уровень
+    }
+
+    def __init__(self, debug_mode=False):
         """Инициализация менеджера уровней"""
-        self.current_level_num = 1  # Номер текущего уровня
-        self.total_score = 0  # Общий счет
-        self.total_artifacts = 0  # Общее количество собранных артефактов
-        self.current_level = self.create_level(self.current_level_num)  # Создание текущего уровня
+        self.current_level_num = 0 if debug_mode else 1  # 0 - debug, 1 - первый уровень
+        self.total_score = 0
+        self.total_artifacts = 0
+        self.game_over = False
+        self.current_level = self.create_level(self.current_level_num)
 
     def create_level(self, level_num: int) -> Level:
-        """Создание уровня по номеру"""
-        level_classes = {
-            1: Level1,
-            2: Level2,
-            3: Level3
-        }
-        return level_classes[level_num](level_num)
+        """Создает уровень по номеру"""
+        level_class = self.level_classes.get(level_num, Level1)  # По умолчанию Level1
+        return level_class(level_num)
 
-    def update(self):
-        """Обновление текущего уровня"""
-        self.current_level.update()
+    def set_debug_level(self):
+        """Переключает на отладочный уровень"""
+        self.current_level_num = 0
+        self.current_level = self.create_level(0)
+        self.game_over = False
 
-    def draw(self, surface: pygame.Surface):
-        """Отрисовка текущего уровня"""
-        self.current_level.draw(surface)
-
-        # Отрисовка счета и артефактов
-        font = pygame.font.SysFont('Arial', 30)
-        score_text = font.render(f'Score: {self.total_score + self.current_level.score}', True, (255, 255, 255))
-        artifacts_text = font.render(
-            f'Artifacts: {self.total_artifacts + self.current_level.artifacts_collected}/{self.current_level.artifacts_required}',
-            True, (255, 255, 255))
-
-        surface.blit(score_text, (20, 20))
-        surface.blit(artifacts_text, (20, 60))
+    def reset(self, debug_mode=False):
+        """Сбрасывает менеджер уровней"""
+        self.current_level_num = 0 if debug_mode else 1
+        self.total_score = 0
+        self.total_artifacts = 0
+        self.game_over = False
+        self.current_level = self.create_level(self.current_level_num)
 
     def next_level(self) -> bool:
-        """Переход на следующий уровень"""
-        self.total_score += self.current_level.score
-        self.total_artifacts += self.current_level.artifacts_collected
+        """Переходит на следующий уровень"""
+        if self.current_level_num == 0:  # Если текущий уровень - debug
+            self.current_level_num = 1  # Переключаем на обычный уровень
 
         if self.current_level_num < 3:
+            self.total_score += self.current_level.score
+            self.total_artifacts += self.current_level.artifacts_collected
             self.current_level_num += 1
             self.current_level = self.create_level(self.current_level_num)
             return True
-        return False  # Игра завершена
+        return False
 
-    def __init__(self):
-        """Инициализация менеджера уровней"""
-        self.current_level_num = 1
+    def update(self, player_rect=None):
+        """Обновляет текущий уровень"""
+        if hasattr(self, 'current_level'):
+            self.current_level.update()
+            if player_rect is not None:
+                if self.current_level.check_player_fell(player_rect):
+                    self.game_over = True
+
+    def draw(self, surface: pygame.Surface):
+        """Отрисовывает текущий уровень"""
+        self.current_level.draw(surface)
+
+        # Отображаем режим debug
+        if self.current_level_num == 0:
+            debug_font = pygame.font.SysFont('Arial', 24)  # Создаем шрифт здесь
+            debug_text = debug_font.render("DEBUG MODE", True, (255, 0, 0))
+            surface.blit(debug_text, (SCREEN_WIDTH - 150, 20))
+
+    def is_game_over(self) -> bool:
+        """Проверка завершения игры (игрок упал)"""
+        return self.game_over
+
+    def reset(self, debug_mode=False):
+        """Сброс менеджера уровней с возможностью debug режима"""
+        self.current_level_num = 0 if debug_mode else 1
         self.total_score = 0
         self.total_artifacts = 0
+        self.game_over = False
         self.current_level = self.create_level(self.current_level_num)
-        self.game_over = False  # Флаг завершения игры
-
-    def is_game_complete(self) -> bool:
-        """Проверка завершения всех уровней"""
-        return self.current_level_num == 3 and self.current_level.completed
 
     def get_level_completion_message(self) -> str:
-        """Сообщение о завершении уровня"""
+        """Возвращает сообщение о завершении уровня"""
         if self.current_level.completed:
             if self.current_level_num < 3:
                 return f"Level {self.current_level_num} complete! Score: {self.total_score}"
             else:
                 return f"Game completed! Final score: {self.total_score}"
         return ""
-
-    def update(self, player_rect: pygame.Rect):
-        """Обновление текущего уровня с проверкой положения игрока"""
-        if self.current_level.check_player_fell(player_rect):
-            self.game_over = True
-        self.current_level.update()
-
-    def is_game_over(self) -> bool:
-        """Проверка завершения игры (игрок упал)"""
-        return self.game_over
-
-    def reset(self):
-        """Сброс менеджера уровней для новой игры"""
-        self.current_level_num = 1
-        self.total_score = 0
-        self.total_artifacts = 0
-        self.current_level = self.create_level(self.current_level_num)
-        self.game_over = False
