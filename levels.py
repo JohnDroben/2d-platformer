@@ -2,7 +2,7 @@ import pygame
 import random
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Type
-from Characters.type_object import ObjectType
+from Characters.object_type import ObjectType
 from custom_logging import Logger
 
 # Константы
