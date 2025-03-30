@@ -3,6 +3,7 @@ import pygame
 from Characters.action import Action
 from Characters.character import Character
 from Characters.animation2 import AnimatedObject
+from Characters.sound import SoundObject
 from Characters.type_object import ObjectType
 
 # Инициализация PyGame
@@ -59,7 +60,12 @@ player_anim = AnimatedObject(player)
 # Для каждого действия указываем файл и количество кадров
 player_anim.load_action_frames(Action.IDLE, 'assets/sprites/idle.png', 7)
 # player_anim.load_action_frames('move', 'assets/run.png', 6)
-player_anim.load_action_frames(Action.JUMP, 'assets/sprites/jump.png', 13)
+player_anim.load_action_frames(Action.JUMP, "assets/sprites/jump.png", 13)
+
+player_sound = SoundObject(player)
+player_sound.load_sounds(Action.JUMP, ["assets/sounds/jump.wav"])
+player_sound.load_sounds(Action.MOVE, ["assets/sounds/step.mp3"])
+player_sound.set_volume(0.7)
 
 # Создание объектов
 game_objects = [
@@ -91,8 +97,10 @@ while running:
 
    if keys[pygame.K_a]:
       player.move(-1)
+      player_sound.play(Action.MOVE)
    if keys[pygame.K_d]:
       player.move(1)
+      player_sound.play(Action.MOVE)
    if keys[pygame.K_s]:
       player.sit_down()
       # Приседание (без проверки)
@@ -107,6 +115,7 @@ while running:
 
    if keys[pygame.K_SPACE]:
       player.jump()
+      player_sound.play(Action.JUMP)
 
    # Обновление физики
 
