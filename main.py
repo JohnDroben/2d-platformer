@@ -57,6 +57,9 @@ def main():
     level_manager.reset()
     Logger().initialize()
 
+    debug_mode = False  # По умолчанию False, можно менять на True для тестов
+    level_manager = LevelManager(debug_mode=debug_mode)
+
     # Инициализация игрока у стартового портала
     start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (100, SCREEN_HEIGHT - 150)
@@ -75,6 +78,14 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_F1:  # Переключение debug режима
+                    debug_mode = not debug_mode
+                    level_manager.reset(debug_mode=debug_mode)
+                    start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
+                    start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
+                    100, SCREEN_HEIGHT - 150)
+                    player, player_anim = create_player(*start_pos)
+                    Logger().debug(f"Debug mode {'ON' if debug_mode else 'OFF'}")
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 elif event.key == pygame.K_SPACE and level_manager.current_level.completed:
@@ -130,6 +141,8 @@ def main():
 
         # Обновление
         if not level_manager.current_level.completed:
+            # Обновление уровня
+            level_manager.update(player_rect=player.rect)
             # Отрисовка игрока
             player_anim.update()
             # В основном цикле отрисовки
@@ -201,7 +214,12 @@ def main():
             info_y += 30
 
         if level_manager.current_level.completed:
-            text = font.render(level_manager.get_level_completion_message(), True, WHITE)
+            text = font.render(
+                f"Level {level_manager.current_level_num} completed!" if level_manager.current_level.completed
+                else "",
+                True,
+                WHITE
+            )
             screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
 
         # Отрисовка Game Over экрана
