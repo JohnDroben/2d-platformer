@@ -34,7 +34,7 @@ def create_player(x, y):
         y=y,  # Ставим на поверхность (ground_level - высота)
         width=60,  # Ширина hitbox (рекомендую уменьшить)
         height=80,  # Высота hitbox (рекомендую уменьшить)
-        speed=4.0,  # Оптимальная скорость движения
+        speed=8.0,  # Оптимальная скорость движения
         jump_force=12,  # Сила прыжка
         gravity=0.6,  # Гравитация
         ground_level=ground_level  # Уровень земли
@@ -96,7 +96,7 @@ def main():
 
             # Управление
         keys = pygame.key.get_pressed()
-        player.direction = 0
+        player.move(0)
 
         if keys[pygame.K_s]:
             player.sit_down()
@@ -123,7 +123,6 @@ def main():
         if keys[pygame.K_SPACE]:
 
             player.jump()
-
 
         # Обновление
         if not level_manager.current_level.completed:

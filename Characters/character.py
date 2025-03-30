@@ -25,7 +25,6 @@ class Character:
    def move(self, direction):
       self.direction = direction
       if direction != 0:
-         self.rect.x += self.speed * direction
          if self.on_ground:  # Меняем анимацию только на земле
             self.current_action = Action.MOVE
       else:

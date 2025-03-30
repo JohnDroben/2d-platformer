@@ -82,14 +82,18 @@ class AnimatedObject:
    def draw(self, surface: pygame.Surface, camera_offset):
       """Отрисовывает текущий кадр"""
       player_rect = self.character.rect.move(camera_offset[0], camera_offset[1])
+
       if self.current_action in self.frames:
          frames = self.frames[self.current_action]
          frame = frames[self.frame]
 
          # Отражение при смене направления
-         if self.character.direction != self.direction:
-            frame = pygame.transform.flip(frame, True, False)
+         if self.character.direction != self.direction and self.character.direction != 0:
             self.direction = self.character.direction
+
+         if self.direction == -1:
+            frame = pygame.transform.flip(frame, True, False)
+
 
          # Отрисовываем спрайт персонажа
          surface.blit(frame, player_rect)
