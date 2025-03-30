@@ -132,12 +132,10 @@ def main():
             # В основном цикле отрисовки
             player.apply_physics(level_manager.current_level.get_all_game_objects(), LEVEL_WIDTH, SCREEN_HEIGHT)
 
-
-
             # Проверка падения за экран (Game Over)
             if player.rect.top > SCREEN_HEIGHT:
                 game_over = True
-            """
+
             # Проверка опасных столкновений
             if level_manager.current_level.check_hazard_collision(player.rect):
                 # Респавн при смерти
@@ -161,7 +159,7 @@ def main():
             if level_manager.current_level.check_finish(player.rect):
                 level_manager.current_level.completed = True
                 level_manager.current_level.completion_time = pygame.time.get_ticks()
-            """
+
             # Позиция камеры
             camera_offset[0] = SCREEN_WIDTH // 2 - player.rect.centerx
             camera_offset[0] = max(min(camera_offset[0], 0), SCREEN_WIDTH - LEVEL_WIDTH)

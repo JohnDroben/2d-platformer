@@ -177,7 +177,7 @@ class Character:
             self.current_action = Action.JUMP
 
       after_rect = self.rect
-      
-      if abs(prev_rect.x - after_rect.x) > 60:
+
+      if abs(prev_rect.x - after_rect.x) > self.width or abs(prev_rect.y - after_rect.y) > self.height :
          Logger().debug(f"prev_rect: {prev_rect} after_rect: {after_rect}: {(prev_rect.x - after_rect.x)}")
          Logger().error("сильное смещение")
