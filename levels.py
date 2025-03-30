@@ -420,6 +420,7 @@ class Portal(GameObject):
         self.disappear_timer = None  # Таймер исчезновения
         self.visible = True  # Флаг видимости
         self.color = (0, 255, 0) if is_exit else (255, 0, 0)  # Зеленый для выхода, красный для входа
+        self.disappear_alpha = 255  # Полностью непрозрачный
 
     def disappear_after(self, milliseconds: int):
         """Устанавливает таймер исчезновения портала"""
@@ -428,13 +429,15 @@ class Portal(GameObject):
     def update(self):
         """Обновление состояния портала"""
         if self.disappear_timer and pygame.time.get_ticks() >= self.disappear_timer:
-            self.visible = False
+            progress = (pygame.time.get_ticks() - self.disappear_timer) / self.disappear_delay
+            self.disappear_alpha = max(0, 255 - int(255 * progress))
 
     def draw(self, surface: pygame.Surface):
         """Отрисовка портала"""
         if self.visible:
-            # Рисуем прямоугольник с цветом в зависимости от типа портала
-            pygame.draw.rect(surface, self.color, self.rect)
+            s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(s, (*self.color, self.disappear_alpha), (0, 0, self.rect.width, self.rect.height))
+            surface.blit(s, self.rect)
 
 
 class Level(ABC):
@@ -454,6 +457,8 @@ class Level(ABC):
         self.artifacts_collected = 0  # Количество собранных артефактов
         self.artifacts_required = level_num  # Требуемое количество артефактов
         self.start_portal_removed = False  # Убираем стартовый портал
+        self.portal_remove_timer = None
+        self.portal_remove_delay = 3000  # 3 секунды в миллисекундах
 
         # Игровые объекты
         self.platforms: List[Platform] = []  # Список платформ
@@ -503,13 +508,19 @@ class Level(ABC):
         return (x, y)
 
     def remove_start_portal(self):
-        """Удаляет стартовый портал после появления игрока"""
+        """Устанавливает таймер удаления стартового портала через 3 секунды"""
         if not self.start_portal_removed:
-            for i, portal in enumerate(self.portals[:]):  # Делаем копию списка для безопасного удаления
+            for i, portal in enumerate(self.portals):
                 if not portal.is_exit:
+                    Logger().debug(f"Найден стартовый портал: {portal.rect}")
+
+                    # Удаляем портал из списка
                     self.portals.pop(i)
                     self.start_portal_removed = True
-                    break
+                    Logger().info("Стартовый портал успешно удалён!")
+                    return  # Выходим после удаления
+
+            Logger().warning("Стартовый портал не найден!")
 
     def update(self):
         """Обновление состояния активных объектов"""
@@ -527,6 +538,15 @@ class Level(ABC):
 
         for portal in self.portals:
             portal.update()
+
+        if self.portal_remove_timer and not self.start_portal_removed:
+            if pygame.time.get_ticks() - self.portal_remove_timer >= self.portal_remove_delay:
+                for i, portal in enumerate(self.portals[:]):
+                    if not portal.is_exit:
+                        self.portals.pop(i)
+                        self.start_portal_removed = True
+                        Logger().info("Стартовый портал удален по таймеру")
+                        break
 
     def draw(self, surface: pygame.Surface):
         """Отрисовка уровня"""

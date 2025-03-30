@@ -41,7 +41,10 @@ def main():
     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (100, SCREEN_HEIGHT - 150)
     player = Hero(start_pos)
 
+    # УДАЛЕНИЕ СТАРТОВОГО ПОРТАЛА ПОСЛЕ ПОЯВЛЕНИЯ ИГРОКА
+    level_manager.current_level.remove_start_portal()
     Logger().debug(f"INIT_CREATE: start_pos:{start_pos}")
+
 
     # Камера
     camera_offset = [0, 0]
@@ -82,6 +85,7 @@ def main():
                         100, SCREEN_HEIGHT - 150)
                     player = Hero(start_pos)
                     Logger().debug(f"RESTART_GAME: start_pos:{start_pos}")
+                    level_manager.current_level.portal_remove_timer = None  # Сброс таймера
                     level_manager.current_level.remove_start_portal()  # Добавляем удаление портала
                     game_over = False
 
@@ -127,6 +131,10 @@ def main():
             # Проверка падения за экран (Game Over)
             if player.rect.top > SCREEN_HEIGHT:
                 game_over = True
+
+            # Проверка, нужно ли удалить стартовый портал (дополнительная проверка)
+            if not level_manager.current_level.start_portal_removed:
+                level_manager.current_level.remove_start_portal()
 
             # Проверка опасных столкновений
             if level_manager.current_level.check_hazard_collision(player.rect):
