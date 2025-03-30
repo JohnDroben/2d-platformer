@@ -70,3 +70,7 @@ player_anim.load_action_frames(Action.IDLE, 'assets/sprites/idle.png', 7)
 * В классе Action файла action.py Указаны типы действий
 * ___Изменить Action  в соответсвии с дейстaвительностью___
 
+
+## 📥 Как получить эту версию
+```bash
+git clone -b physics https://github.com/JohnDroben/2d-platformer.git
