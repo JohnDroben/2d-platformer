@@ -18,7 +18,6 @@ Color = Tuple[int, int, int]  # Цвет в формате RGB
 Position = Tuple[int, int]  # Позиция объекта (x, y)
 Size = Tuple[int, int]  # Размер объекта (ширина, высота)
 
-
 # Функция загрузки спрайтов
 def load_sprite(name: str, default_color: Color) -> pygame.Surface:
     """Загрузка спрайта или создание заглушки с указанным цветом"""
@@ -33,7 +32,6 @@ def load_sprite(name: str, default_color: Color) -> pygame.Surface:
         sprite.fill(default_color)
         return sprite
 
-
 # Спрайты для всех объектов
 background_sprite = load_sprite("background", (20, 30, 15))
 coin_sprite = load_sprite("coin", (255, 215, 0))
@@ -45,7 +43,6 @@ artifact_sprite = load_sprite("artifact", (255, 215, 0))
 portal_sprite = load_sprite("portal", (0, 255, 0))
 vertical_platform_sprite = load_sprite("vertical_platform", (120, 120, 120))
 horizontal_platform_sprite = load_sprite("horizontal_platform", (120, 120, 120))
-
 
 class GameObject(ABC):
     """Базовый класс для всех игровых объектов"""
@@ -76,7 +73,6 @@ class GameObject(ABC):
         """Проверка коллизии с другим объектом"""
         return self.rect.colliderect(other_rect)
 
-
 class Bonus(GameObject):
     """Базовый класс бонусов"""
 
@@ -96,7 +92,6 @@ class Bonus(GameObject):
         """Сбор бонуса"""
         self.is_active = False  # Делаем бонус неактивным
         return self.points  # Возвращаем количество очков
-
 
 class Coin(Bonus):
     """Монеты - базовые бонусы"""
@@ -119,7 +114,6 @@ class Coin(Bonus):
         """Отрисовка монеты на поверхности"""
         surface.blit(self.sprite, self.rect)
 
-
 class Obstacle(GameObject):
     """Базовый класс препятствий"""
 
@@ -135,45 +129,66 @@ class Obstacle(GameObject):
 
 
 class Hole(GameObject):
-    """Люк с привязанным лифтом"""
+    """Класс люка без привязки к лифту"""
 
-    def __init__(self, platform: 'Platform', width: int, position_x: int, all_platforms: List['Platform']):
+    def __init__(self, platform: 'Platform', width: int, position_x: int):
         super().__init__(
             (platform.rect.x + position_x, platform.rect.y),
             (width, PLATFORM_HEIGHT),
             ObjectType.HOLE
         )
         self.platform = platform
-        self.all_platforms = all_platforms
-        self.lift = None  # Привязанный лифт
         self.sprite = pygame.Surface((width, PLATFORM_HEIGHT))
         self.sprite.fill((50, 50, 50))
 
-    def set_lift(self, lift: 'MovingPlatformVertical'):
-        """Жестко привязывает лифт к люку"""
-        self.lift = lift
-        # Центрируем лифт относительно люка
-        self.lift.rect.midbottom = (self.rect.centerx, self.rect.top)
-        # Настраиваем границы движения
-        self.lift.lower_y = self.rect.top - self.lift.rect.height
-        self.lift.upper_y = self.find_upper_platform().rect.bottom - self.lift.rect.height
+    def update(self):
+        """Реализация абстрактного метода - люк не требует обновления"""
+        pass
 
-    def find_upper_platform(self) -> 'Platform':
-        """Находит ближайшую платформу выше"""
-        for platform in self.all_platforms:
-            if platform.rect.y < self.platform.rect.y:
-                return platform
-        return self.platform  # Если нет платформы выше, возвращаем текущую
+    def draw(self, surface: pygame.Surface):
+        """Реализация абстрактного метода"""
+        surface.blit(self.sprite, self.rect)
+
+
+class HoleWithLift(Hole):
+    """Люк с автоматически движущимся лифтом"""
+
+    def __init__(self, platform: 'Platform', width: int, position_x: int, lift_height: int = 30):
+        """
+        :param platform: Родительская платформа
+        :param width: Ширина люка
+        :param position_x: Смещение по X от левого края платформы
+        :param lift_height: Высота лифта (по умолчанию 30px)
+        """
+        super().__init__(platform, width, position_x)
+
+        # Позиция лифта (центрирован по X относительно люка)
+        lift_x = self.rect.centerx - 50  # 50 = половина ширины лифта (100px)
+        lift_y = platform.rect.top - lift_height   # Стартовая позиция - под платформой
+
+        # Создаем лифт с указанной высотой
+        self.lift = MovingPlatformVertical(
+            position=(lift_x, lift_y),
+            height=lift_height
+        )
+
+        # Настраиваем границы движения
+        self.lift.upper_y = platform.rect.top - lift_height
+        self.lift.lower_y = platform.rect.top + 200
 
     def update(self):
+        """Обновление состояния люка и лифта"""
+        super().update()  # Вызываем базовый метод (хотя он пустой)
         if self.lift:
-            # Всегда синхронизируем позицию X лифта с люком
-            self.lift.rect.x = self.rect.centerx - self.lift.rect.width // 2
+            # Синхронизация позиции по X
+            self.lift.rect.centerx = self.rect.centerx
             self.lift.update()
 
     def draw(self, surface: pygame.Surface):
-        surface.blit(self.sprite, self.rect)
-
+        """Отрисовка люка и лифта"""
+        super().draw(surface)  # Рисуем сам люк
+        if self.lift:
+            self.lift.draw(surface)  # Рисуем лифт
 
 class Platform(GameObject):
     """Платформа с возможностью создания отверстий"""
@@ -204,15 +219,7 @@ class Platform(GameObject):
         hole_width = 100
         hole = self.add_hole(hole_width, self.rect.width - hole_width - 30)
 
-        # Создаем лифт
-        lift = MovingPlatformVertical(
-            (hole.rect.centerx - 50, self.rect.y - 50),
-            30,
-            200  # Временное значение, будет пересчитано в set_lift
-        )
-        hole.set_lift(lift)
 
-        return wall, hole, lift
 
     def draw(self, surface: pygame.Surface):
         """Отрисовка платформы и её отверстий"""
@@ -220,6 +227,41 @@ class Platform(GameObject):
         for hole in self.holes:
             hole.draw(surface)
 
+
+class MovingPlatformVertical(Obstacle):
+    """Вертикально движущаяся платформа (лифт)"""
+
+    def __init__(self, position: Position, height: int):
+        """
+        :param position: Начальная позиция (x, y)
+        :param height: Высота платформы
+        """
+        super().__init__(position, (100, height), ObjectType.MOVING_PLATFORM)
+        self.sprite = moving_platform_sprite
+        self.sprite = pygame.transform.scale(self.sprite, (100, height))
+
+        # Границы движения
+        self.lower_y = position[1]  # Нижняя граница (начальная позиция)
+        self.upper_y = position[1] + 200  # Верхняя граница (на 200px выше)
+        self.speed = 2
+        self.direction = 1  # 1 = вверх, -1 = вниз
+        self.rect.y = position[1]
+
+
+    def update(self):
+        """Обновление позиции лифта"""
+        self.rect.y += self.speed * self.direction
+
+        # Проверка границ и смена направления
+        if self.rect.y >= self.lower_y:
+            self.direction = -1  # Двигаемся вверх
+        elif self.rect.y <= self.upper_y:
+            self.direction = 1  # Двигаемся вниз
+
+
+    def draw(self, surface: pygame.Surface):
+        """Отрисовка лифта"""
+        surface.blit(self.sprite, self.rect)
 
 class StaticVerticalPlatform(Obstacle):
     """Статичная вертикальная платформа (стена/колонна)"""
@@ -243,7 +285,6 @@ class StaticVerticalPlatform(Obstacle):
         """Отрисовка платформы"""
         surface.blit(self.sprite, self.rect)
 
-
 class StaticHorizontalPlatform(Obstacle):
     """Статичная горизонтальная платформа (балка/перемычка)"""
 
@@ -265,7 +306,6 @@ class StaticHorizontalPlatform(Obstacle):
     def draw(self, surface: pygame.Surface):
         """Отрисовка платформы"""
         surface.blit(self.sprite, self.rect)
-
 
 class Spike(Obstacle):
     """Шипы - опасные препятствия"""
@@ -293,80 +333,6 @@ class Spike(Obstacle):
 
     def draw(self, surface: pygame.Surface):
         """Отрисовка шипов на поверхности"""
-        surface.blit(self.sprite, self.rect)
-
-
-class MovingPlatformVertical(Obstacle):
-    """Лифт, жестко привязанный к люку"""
-
-    def __init__(self, height: int):
-        """
-        Упрощенная инициализация - позиция будет задана через Hole.set_lift()
-
-        :param height: Высота лифта
-        """
-        # Временная позиция, будет переопределена
-        super().__init__((0, 0), (100, height), ObjectType.MOVING_PLATFORM)
-        self.sprite = moving_platform_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (100, height))
-
-        # Границы движения (будут установлены Hole)
-        self.lower_y = 0
-        self.upper_y = 0
-        self.speed = 2
-        self.direction = 1  # 1 = вверх, -1 = вниз
-
-    def update(self):
-        """Движение между установленными границами"""
-        self.rect.y += self.speed * self.direction
-
-        if self.rect.y <= self.upper_y:  # Достигли верха
-            self.direction = -1
-        elif self.rect.y >= self.lower_y:  # Достигли низа
-            self.direction = 1
-
-    def draw(self, surface: pygame.Surface):
-        surface.blit(self.sprite, self.rect)
-
-
-class MovingPlatformVertical(Obstacle):
-    """Вертикально движущаяся платформа (лифт)"""
-
-    def __init__(self, position: Position, height: int, lower_platform: 'Platform', upper_platform: 'Platform'):
-        """
-        Инициализация вертикально движущейся платформы.
-
-        :param position: Позиция (x, _) - y будет вычислен автоматически
-        :param height: Высота платформы
-        :param lower_platform: Нижняя платформа (где находится люк)
-        :param upper_platform: Верхняя платформа (куда должен подниматься лифт)
-        """
-        # Стартовая позиция - сразу над нижней платформой (на уровне люка)
-        start_y = lower_platform.rect.y - height
-        super().__init__((position[0], start_y), (100, height), ObjectType.MOVING_PLATFORM)
-
-        self.sprite = moving_platform_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (100, height))
-
-        # Границы движения
-        self.lower_y = lower_platform.rect.y - height  # Нижняя граница (уровень люка)
-        self.upper_y = upper_platform.rect.y - height  # Верхняя граница (у верхней платформы)
-        self.speed = 2
-        self.direction = 1  # 1 = вверх, -1 = вниз
-
-    def update(self):
-        """Обновление состояния платформы"""
-        self.rect.y += self.speed * self.direction
-
-        # Проверяем границы движения
-        if self.rect.y <= self.upper_y:  # Достигли верхней платформы
-            self.direction = -1  # Меняем направление вниз
-
-        elif self.rect.y >= self.lower_y:  # Вернулись к нижней платформе
-            self.direction = 1  # Меняем направление вверх
-
-    def draw(self, surface: pygame.Surface):
-        """Отрисовка платформы на поверхности"""
         surface.blit(self.sprite, self.rect)
 
 class CircularSaw(Obstacle):
@@ -402,7 +368,6 @@ class CircularSaw(Obstacle):
         new_rect = rotated_sprite.get_rect(center=self.rect.center)
         surface.blit(rotated_sprite, new_rect.topleft)
 
-
 class Artifact(Bonus):
     """Артефакт - специальный бонус"""
 
@@ -427,7 +392,6 @@ class Artifact(Bonus):
         rotated_sprite = pygame.transform.rotate(self.sprite, self.animation_angle)
         new_rect = rotated_sprite.get_rect(center=self.rect.center)
         surface.blit(rotated_sprite, new_rect.topleft)
-
 
 class Portal(GameObject):
     """Портал для старта и финиша"""
@@ -471,7 +435,6 @@ class Portal(GameObject):
     def activate(self):
         """Активация портала"""
         self.active = True
-
 
 class Level(ABC):
     """Абстрактный базовый класс уровня"""
@@ -626,256 +589,7 @@ class Level(ABC):
         )
         return all_objects
 
-
 class Level1(Level):
-    def generate_level(self):
-        # Создаем платформы (как ранее)
-        platform_positions = [
-            (0, SCREEN_HEIGHT - 150),  # Нижняя
-            (0, SCREEN_HEIGHT - 350),  # Средняя (с люком)
-            (0, SCREEN_HEIGHT - 550)  # Верхняя
-        ]
-        self.platforms = [Platform(pos, LEVEL_WIDTH) for pos in platform_positions]
-
-        # Создаем люк на средней платформе
-        middle_platform = self.platforms[1]
-        hole = middle_platform.add_hole(
-            width=150,
-            position_x=middle_platform.rect.width // 2 - 75,
-            all_platforms=self.platforms
-        )
-
-        # Создаем и привязываем лифт
-        lift = MovingPlatformVertical(30)  # Только высота
-        hole.set_lift(lift)  # Здесь устанавливаются все параметры
-        self.obstacles.append(lift)
-
-        # Вертикальные стены (тупики) по краям средней платформы
-        wall_height = 120
-        left_wall = StaticVerticalPlatform(
-            (middle_platform.rect.x + 50, middle_platform.rect.y - wall_height),
-            wall_height
-        )
-        right_wall = StaticVerticalPlatform(
-            (middle_platform.rect.right - 80, middle_platform.rect.y - wall_height),
-            wall_height
-        )
-        self.obstacles.extend([left_wall, right_wall])
-
-        # Горизонтальные соединительные платформы между уровнями
-        self.obstacles.extend([
-            StaticHorizontalPlatform((300, SCREEN_HEIGHT - 250), 200),  # Между 1 и 2
-            StaticHorizontalPlatform((800, SCREEN_HEIGHT - 450), 200)  # Между 2 и 3
-        ])
-
-        # Портал старта (на нижней платформе) и финиша (на верхней)
-        self.portals.extend([
-            Portal((100, SCREEN_HEIGHT - 250), False),  # Старт
-            Portal((LEVEL_WIDTH - 200, SCREEN_HEIGHT - 650), True)  # Финиш
-        ])
-
-        # Артефакт на средней платформе рядом с люком
-        self.artifacts.append(Artifact((
-            middle_platform.rect.centerx + 200,
-            middle_platform.rect.y - 50
-        )))
-
-        # Шипы на платформах
-        for platform in self.platforms:
-            for _ in range(3):
-                x = random.randint(platform.rect.x + 100, platform.rect.x + platform.rect.width - 100)
-                self.obstacles.append(Spike((x, platform.rect.y - 16), True))
-
-        # Монеты
-        for _ in range(20):
-            x = random.randint(100, LEVEL_WIDTH - 100)
-            y = random.randint(100, SCREEN_HEIGHT - 200)
-            for _ in range(20):
-                self.bonuses.append(Coin((random.randint(100, LEVEL_WIDTH - 100),
-                                          random.randint(100, SCREEN_HEIGHT - 200))))
-    """Первый уровень с люком и лифтом на средней платформе"""
-
-    def generate_level(self):
-        # Основные платформы (3 уровня) на всю ширину
-        platform_positions = [
-            (0, SCREEN_HEIGHT - 150),  # Нижний уровень (1)
-            (0, SCREEN_HEIGHT - 350),  # Средний уровень (2) - здесь будет люк
-            (0, SCREEN_HEIGHT - 550)   # Верхний уровень (3)
-        ]
-
-        # Создаем платформы
-        for x, y in platform_positions:
-            platform = Platform((x, y), LEVEL_WIDTH)
-            self.platforms.append(platform)
-
-        # Средняя платформа (2)
-        middle_platform = self.platforms[1]
-
-        # Создаем люк на средней платформе (примерно по центру)
-        hole_width = 150
-        hole_position_x = middle_platform.rect.centerx - hole_width//2
-        hole = middle_platform.add_hole(
-            width=hole_width,
-            position_x=hole_position_x,
-            all_platforms=self.platforms
-        )
-
-        # Создаем лифт для этого люка (движется между средней и нижней платформами)
-        lift = MovingPlatformVertical(
-            (hole.rect.centerx - 75, middle_platform.rect.y - 30),  # Позиция по x центру люка
-            30,  # Высота лифта
-            middle_platform,  # Нижняя граница (средняя платформа)
-            self.platforms[0]  # Верхняя граница (нижняя платформа)
-        )
-        self.obstacles.append(lift)
-        hole.set_lift(lift)
-
-        # Вертикальные стены (тупики) по краям средней платформы
-        wall_height = 120
-        left_wall = StaticVerticalPlatform(
-            (middle_platform.rect.x + 50, middle_platform.rect.y - wall_height),
-            wall_height
-        )
-        right_wall = StaticVerticalPlatform(
-            (middle_platform.rect.right - 80, middle_platform.rect.y - wall_height),
-            wall_height
-        )
-        self.obstacles.extend([left_wall, right_wall])
-
-        # Горизонтальные соединительные платформы между уровнями
-        self.obstacles.extend([
-            StaticHorizontalPlatform((300, SCREEN_HEIGHT - 250), 200),  # Между 1 и 2
-            StaticHorizontalPlatform((800, SCREEN_HEIGHT - 450), 200)   # Между 2 и 3
-        ])
-
-        # Портал старта (на нижней платформе) и финиша (на верхней)
-        self.portals.extend([
-            Portal((100, SCREEN_HEIGHT - 250), False),  # Старт
-            Portal((LEVEL_WIDTH - 200, SCREEN_HEIGHT - 650), True)  # Финиш
-        ])
-
-        # Артефакт на средней платформе рядом с люком
-        self.artifacts.append(Artifact((
-            middle_platform.rect.centerx + 200,
-            middle_platform.rect.y - 50
-        )))
-
-        # Шипы на платформах
-        for platform in self.platforms:
-            for _ in range(3):
-                x = random.randint(platform.rect.x + 100, platform.rect.x + platform.rect.width - 100)
-                self.obstacles.append(Spike((x, platform.rect.y - 16), True))
-
-        # Монеты
-        for _ in range(20):
-            x = random.randint(100, LEVEL_WIDTH - 100)
-            y = random.randint(100, SCREEN_HEIGHT - 200)
-            self.bonuses.append(Coin((x, y)))
-
-
-class Level2(Level1):
-    """Второй уровень с дополнительными тупиками"""
-
-    def generate_level(self):
-        super().generate_level()
-
-        # Основные платформы уже созданы в родительском классе (на всю ширину)
-        # Добавляем тупик на нижней платформе
-        bottom_platform = self.platforms[0]
-        wall_x = bottom_platform.rect.right - 70
-        wall_height = 150
-
-        wall = StaticVerticalPlatform(
-            (wall_x, bottom_platform.rect.y - wall_height),
-            wall_height
-        )
-        self.obstacles.append(wall)
-
-        hole = bottom_platform.add_hole(
-            width=120,
-            position_x=wall_x - bottom_platform.rect.x - 120,
-            all_platforms=self.platforms
-        )
-
-        # Лифт движется между нижней и средней платформами
-        lift = MovingPlatformVertical(
-            (hole.rect.centerx - 50, bottom_platform.rect.y - 50),
-            30,
-            bottom_platform,  # Нижняя граница
-            self.platforms[1]  # Верхняя платформа (средняя)
-        )
-        self.obstacles.append(lift)
-        hole.set_lift(lift)
-
-        # [остальной код без изменений]
-
-        # Остальные оригинальные объекты Level2
-        for platform in self.platforms:
-            for _ in range(2):
-                y = random.randint(platform.rect.y + 50, platform.rect.y + platform.rect.height - 50)
-                self.obstacles.append(Spike((platform.rect.x + 16, y), False))
-
-        top_platform = self.platforms[-1]
-        self.artifacts.append(Artifact((top_platform.rect.x + 350, top_platform.rect.y - 50)))
-
-        for obstacle in self.obstacles:
-            if isinstance(obstacle, (MovingPlatformVertical, CircularSaw)):
-                obstacle.speed *= 1.5
-
-
-class Level3(Level2):
-    """Третий уровень с тупиками на всех платформах"""
-
-    def generate_level(self):
-        super().generate_level()
-
-        # Добавляем тупик на верхней платформе
-        top_platform = self.platforms[-1]
-        wall_x = top_platform.rect.right - 90
-        wall_height = 180
-
-        wall = StaticVerticalPlatform(
-            (wall_x, top_platform.rect.y - wall_height),
-            wall_height
-        )
-        self.obstacles.append(wall)
-
-        hole = top_platform.add_hole(
-            width=140,
-            position_x=wall_x - top_platform.rect.x - 140,
-            all_platforms=self.platforms
-        )
-
-        # Лифт движется между верхней и средней платформами
-        lift = MovingPlatformVertical(
-            (hole.rect.centerx - 50, top_platform.rect.y - 50),
-            30,
-            top_platform,  # Нижняя граница
-            self.platforms[1]  # Верхняя платформа (средняя)
-        )
-        self.obstacles.append(lift)
-        hole.set_lift(lift)
-
-        # Оригинальные объекты Level3
-        for platform in self.platforms:
-            for _ in range(4):
-                y = random.randint(platform.rect.y + 50, platform.rect.y + platform.rect.height - 50)
-                self.obstacles.append(Spike((platform.rect.x + 16, y), False))
-
-            for _ in range(4):
-                x = random.randint(platform.rect.x + 50, platform.rect.x + platform.rect.width - 50)
-                self.obstacles.append(Spike((x, platform.rect.y - 16), True))
-
-        self.artifacts.append(Artifact((top_platform.rect.x + 500, top_platform.rect.y - 50)))
-
-        for obstacle in self.obstacles:
-            if isinstance(obstacle, (MovingPlatformVertical, CircularSaw)):
-                obstacle.speed *= 2.0
-
-
-class DebugLevel(Level):
-    """Отладочный уровень с исправленными лифтами"""
-
     def generate_level(self):
         self.width = LEVEL_WIDTH
         self.height = SCREEN_HEIGHT
@@ -883,68 +597,154 @@ class DebugLevel(Level):
 
         # Основные платформы (3 уровня)
         platform_positions = [
-            (0, SCREEN_HEIGHT - 150),  # Нижний уровень (1)
-            (0, SCREEN_HEIGHT - 350),  # Средний уровень (2)  # Верхний уровень (3)
+            (0, SCREEN_HEIGHT - 150),  # Нижний уровень
+            (0, SCREEN_HEIGHT - 350),  # Средний уровень
+            (0, SCREEN_HEIGHT - 550)   # Верхний уровень
         ]
 
-        # Создаем платформы
         self.platforms = [Platform(pos, LEVEL_WIDTH) for pos in platform_positions]
-        lower_platform = self.platforms[0]
-        middle_platform = self.platforms[1]
-        
+        lower_platform, middle_platform, upper_platform = self.platforms
 
-        # 1. Люк и лифт на нижней платформе (движется к средней)
-        hole1 = lower_platform.add_hole(
-            width=150,
-            position_x=400,
-            all_platforms=self.platforms
-        )
-        lift1 = MovingPlatformVertical(
-            (hole1.rect.centerx - 75, lower_platform.rect.y - 30),  # Позиция
-            30,  # Высота
-            lower_platform,  # Нижняя платформа (где люк)
-            middle_platform  # Верхняя платформа (куда едет)
-        )
-        self.obstacles.append(lift1)
-        hole1.set_lift(lift1)
+        # Добавляем 2 HoleWithLift на средней платформе
+        for i in range(1, 3):
+            hole = HoleWithLift(
+                platform=middle_platform,
+                width=120,
+                position_x=LEVEL_WIDTH//3 * i - 60,
+                lift_height=40
+            )
+            middle_platform.holes.append(hole)
+            self.obstacles.append(hole.lift)
 
-        # 2. Люк и лифт на средней платформе (движется к верхней)
-        hole2 = middle_platform.add_hole(
-            width=150,
-            position_x=800,
-            all_platforms=self.platforms
-        )
-        lift2 = MovingPlatformVertical(
-            (hole2.rect.centerx - 75, middle_platform.rect.y - 30),
-            30,
-            middle_platform,
-            upper_platform
-        )
-        self.obstacles.append(lift2)
-        hole2.set_lift(lift2)
+        # Добавляем 2 HoleWithLift на верхней платформе
+        for i in range(1, 3):
+            hole = HoleWithLift(
+                platform=upper_platform,
+                width=120,
+                position_x=LEVEL_WIDTH//3 * i - 60,
+                lift_height=40
+            )
+            upper_platform.holes.append(hole)
+            self.obstacles.append(hole.lift)
 
-        # Статические препятствия
+        # Вертикальные стены
+        wall_height = 120
         self.obstacles.extend([
-
-            StaticVerticalPlatform((700, middle_platform.rect.y - 120), 120),
-            StaticHorizontalPlatform((200, SCREEN_HEIGHT - 250), 150),
-            StaticHorizontalPlatform((900, SCREEN_HEIGHT - 450), 150),
-            Spike((500, lower_platform.rect.y - 16), True),
-            CircularSaw((400, SCREEN_HEIGHT - 400), 100)
+            StaticVerticalPlatform((50, middle_platform.rect.y - wall_height), wall_height),
+            StaticVerticalPlatform((LEVEL_WIDTH - 80, middle_platform.rect.y - wall_height), wall_height)
         ])
 
-        # Бонусы и артефакты
-        self.bonuses.extend([
-            Coin((250, SCREEN_HEIGHT - 200)),
-            Coin((850, SCREEN_HEIGHT - 400))
+        # Горизонтальные платформы
+        self.obstacles.extend([
+            StaticHorizontalPlatform((300, SCREEN_HEIGHT - 250), 200),
+            StaticHorizontalPlatform((800, SCREEN_HEIGHT - 450), 200)
         ])
-        self.artifacts.append(Artifact((700, SCREEN_HEIGHT - 300)))
+
+        # Шипы
+        for platform in self.platforms:
+            for _ in range(2):
+                x = random.randint(100, LEVEL_WIDTH - 100)
+                self.obstacles.append(Spike((x, platform.rect.y - 16), True))
+
+        # Бонусы
+        for _ in range(20):
+            x = random.randint(100, LEVEL_WIDTH - 100)
+            y = random.randint(100, SCREEN_HEIGHT - 200)
+            self.bonuses.append(Coin((x, y)))
+
+        # Артефакт
+        self.artifacts.append(Artifact((
+            middle_platform.rect.centerx + 200,
+            middle_platform.rect.y - 50
+        )))
 
         # Портал старта и финиша
         self.portals.extend([
             Portal((100, SCREEN_HEIGHT - 250), False),
-            Portal((1100, SCREEN_HEIGHT - 600), True)
+            Portal((LEVEL_WIDTH - 200, SCREEN_HEIGHT - 650), True)
         ])
+
+class Level2(Level1):
+    def generate_level(self):
+        super().generate_level()
+
+        # Добавляем дополнительные HoleWithLift
+        bottom_platform = self.platforms[0]
+        top_platform = self.platforms[2]
+
+        # На нижней платформе
+        for i in range(1, 3):
+            hole = HoleWithLift(
+                platform=bottom_platform,
+                width=100,
+                position_x=LEVEL_WIDTH//4 * i,
+                lift_height=35
+            )
+            bottom_platform.holes.append(hole)
+            self.obstacles.append(hole.lift)
+
+        # Увеличиваем скорость лифтов
+        for obstacle in self.obstacles:
+            if isinstance(obstacle, MovingPlatformVertical):
+                obstacle.speed = 3
+
+class Level3(Level2):
+    def generate_level(self):
+        super().generate_level()
+
+        # Еще больше HoleWithLift
+        middle_platform = self.platforms[1]
+
+        # Дополнительные на средней платформе
+        for i in range(3, 5):
+            hole = HoleWithLift(
+                platform=middle_platform,
+                width=110,
+                position_x=LEVEL_WIDTH//5 * i,
+                lift_height=45
+            )
+            middle_platform.holes.append(hole)
+            self.obstacles.append(hole.lift)
+
+        # Увеличиваем скорость лифтов
+        for obstacle in self.obstacles:
+            if isinstance(obstacle, MovingPlatformVertical):
+                obstacle.speed = 4
+
+class DebugLevel(Level):
+    def generate_level(self):
+        self.width = 800
+        self.height = SCREEN_HEIGHT
+        self.artifacts_required = 1
+
+        platform_width = 600
+        platform_positions = [
+            (100, SCREEN_HEIGHT - 150),
+            (100, SCREEN_HEIGHT - 350)
+        ]
+
+        self.platforms = [Platform(pos, platform_width) for pos in platform_positions]
+        lower_platform, upper_platform = self.platforms
+
+        # Добавляем HoleWithLift
+        holes = [
+            HoleWithLift(lower_platform, 100, 250, 30),
+            HoleWithLift(upper_platform, 100, 450, 30)
+        ]
+
+        for hole in holes:
+            hole.platform.holes.append(hole)
+            self.obstacles.append(hole.lift)
+
+        # Остальные объекты...
+        self.obstacles.append(Spike((150, lower_platform.rect.y - 16), True))
+        self.bonuses.extend([Coin((400, SCREEN_HEIGHT - 200)) for _ in range(3)])
+        self.artifacts.append(Artifact((550, SCREEN_HEIGHT - 200)))
+        self.obstacles.append(CircularSaw((650, SCREEN_HEIGHT - 250), 80))
+        self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
+        self.portals.append(Portal((700, SCREEN_HEIGHT - 400), True))
+        self.portals.append(Portal((120, SCREEN_HEIGHT - 250), False))
+
 
 
 class LevelManager:
@@ -1019,7 +819,7 @@ class LevelManager:
         return self.game_over
 
     def reset(self, debug_mode=False):
-        """Сброс менеджера уровней с возможностью debug режима"""
+        """Сброс менеджер уровней с возможностью debug режима"""
         self.current_level_num = 0 if debug_mode else 1
         self.total_score = 0
         self.total_artifacts = 0
