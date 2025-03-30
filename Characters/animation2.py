@@ -73,7 +73,7 @@ class AnimatedObject:
    def change_action(self, new_action: Action):
       """Меняет текущее действие"""
       if new_action != self.current_action and new_action in self.frames:
-         Logger().debug(f"Change_action to: {new_action}")
+         #Logger().debug(f"Change_action to: {new_action}")
          self.current_action = new_action
          self.frame = 0
          self.sound_played_for_frame.clear()  # Сбрасываем флаги звуков
