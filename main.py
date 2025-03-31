@@ -33,6 +33,12 @@ large_font = pygame.font.SysFont('Arial', 72)  # Для Game Over текста
 
 ground_level = SCREEN_HEIGHT+200
 
+def wait_for_key_release(key):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYUP and event.key == key:
+                Logger().debug(f"Кнопка {pygame.key.name(key)} отпущена")
+                return
 
 def main():
     clock = pygame.time.Clock()
@@ -59,6 +65,7 @@ def main():
     camera_offset = [0, 0]
     running = True
     game_over = False  # Флаг состояния Game Over
+    paused = False     # Флаг состояния paused
 
     while running:
         # Обработка событий
@@ -121,12 +128,20 @@ def main():
             player.move(0)
 
         if keys[pygame.K_SPACE]:
-            if (player.on_ground):
+            if player.on_ground:
                 sound_manager.play_sound('jump')
                 player.jump()
 
+        if keys[pygame.K_p]:
+            if paused:
+                paused = False
+                wait_for_key_release(pygame.K_p)
+            else:
+                paused = True
+                wait_for_key_release(pygame.K_p)
+
         # Обновление
-        if not level_manager.current_level.completed:
+        if not level_manager.current_level.completed and not paused:
             # Обновление уровня
             level_manager.update(player_rect=player.rect)
             # Отрисовка игрока
@@ -213,19 +228,32 @@ def main():
             screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
 
         # Отрисовка Game Over экрана
-        if game_over:
+        if game_over or paused:
             # Затемнение экрана
             s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
             s.fill((0, 0, 0, 180))
             screen.blit(s, (0, 0))
 
             # Текст Game Over
-            game_over_text = large_font.render("GAME OVER", True, RED)
-            restart_text = font.render("Нажмите R для рестарта", True, WHITE)
+            line1 = ""
+            line1_color = WHITE
+            line2 = ""
+            if game_over:
+                line1 = "GAME OVER"
+                line2 = "Нажмите R для рестарта"
+                line1_color = RED
+            elif paused:
+                line1 = "ПАУЗА"
+                line2 = "Нажмите P чтобы продолжить"
+                line1_color = GREEN
+
+            game_over_text = large_font.render(line1, True, line1_color)
+            restart_text = font.render(line2, True, WHITE)
             screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2,
                                          SCREEN_HEIGHT // 2 - 50))
             screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2,
                                        SCREEN_HEIGHT // 2 + 50))
+
 
         pygame.display.flip()
         clock.tick(60)
