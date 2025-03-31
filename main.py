@@ -139,9 +139,6 @@ def main():
             # Проверка опасных столкновений
             if level_manager.current_level.check_hazard_collision(player.rect):
                 # Респавн при смерти
-                start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
-                start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
-                    100, SCREEN_HEIGHT - 150)
                 player = Hero(start_pos)
 
             # Проверка падения в яму
