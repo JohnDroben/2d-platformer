@@ -23,6 +23,9 @@ class Character:
       self.direction = 1
       self.current_action = Action.IDLE
 
+   def teleport (self, x, y):
+      self.rect.x = x
+      self.rect.y = y
 
    def move(self, direction):
       self.direction = direction

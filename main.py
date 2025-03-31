@@ -37,7 +37,7 @@ def wait_for_key_release(key):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.KEYUP and event.key == key:
-                Logger().debug(f"Кнопка {pygame.key.name(key)} отпущена")
+                #Logger().debug(f"Кнопка {pygame.key.name(key)} отпущена")
                 return
 
 def main():
@@ -45,8 +45,6 @@ def main():
     level_manager = LevelManager()
     level_manager.reset()
     Logger().initialize()
-
-
 
     debug_mode = False  # По умолчанию False, можно менять на True для тестов
     level_manager = LevelManager(debug_mode=debug_mode)
@@ -79,7 +77,7 @@ def main():
                     start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                     100, SCREEN_HEIGHT - 150)
-                    player = Hero(start_pos)
+                    player.teleport(start_pos)
                     Logger().debug(f"Debug mode {'ON' if debug_mode else 'OFF'}")
                 if event.key == pygame.K_ESCAPE:
                     running = False
@@ -91,7 +89,7 @@ def main():
                         start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                         start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                         100, SCREEN_HEIGHT - 150)
-                        player = Hero(start_pos)
+                        player.teleport(start_pos)
                         Logger().debug(f"NEW_LEVEL: start_pos:{start_pos}")
                 elif event.key == pygame.K_r and game_over:  # Рестарт по нажатию R
                     # Сброс игры
@@ -141,7 +139,7 @@ def main():
                 wait_for_key_release(pygame.K_p)
 
         # Обновление
-        if not level_manager.current_level.completed and not paused:
+        if not level_manager.current_level.completed and not paused and not game_over:
             # Обновление уровня
             level_manager.update(player_rect=player.rect)
             # Отрисовка игрока
@@ -161,14 +159,18 @@ def main():
             if level_manager.current_level.check_hazard_collision(player.rect):
                 # Респавн при смерти
                 sound_manager.play_sound('death')
-                player = Hero(start_pos)
+                player.lose_life()
+                if not player.is_live():
+                    game_over = True
+                player.teleport(start_pos)
 
             # Проверка падения в яму
             if level_manager.current_level.check_fall_into_pit(player.rect):
-                start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
-                start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
-                    100, SCREEN_HEIGHT - 150)
-                player = Hero(start_pos)
+                sound_manager.play_sound('death')
+                player.lose_life()
+                if not player.is_live():
+                    game_over = True
+                player.teleport(start_pos)
 
             # Сбор бонусов и артефактов
             collected_points = level_manager.current_level.collect_bonuses(player.rect)
@@ -194,7 +196,7 @@ def main():
                     start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                     start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
                     100, SCREEN_HEIGHT - 150)
-                    player = Hero(start_pos)
+                    player.teleport(start_pos)
                     Logger().debug(f"NEW_LEVEL: start_pos:{start_pos}")
 
         # Отрисовка
@@ -210,10 +212,12 @@ def main():
 
         # UI
         info_y = 20
+        player_lives, player_init_lives = player.get_lives()
         for text in [
             f"Уровень: {level_manager.current_level_num}/3",
             f"Счет: {level_manager.total_score + level_manager.current_level.score}",
-            f"Артефакты: {level_manager.current_level.artifacts_collected}/{level_manager.current_level.artifacts_required}"
+            f"Артефакты: {level_manager.current_level.artifacts_collected}/{level_manager.current_level.artifacts_required}",
+            f"Жизни: {player_lives}/{player_init_lives}",
         ]:
             screen.blit(font.render(text, True, WHITE), (20, info_y))
             info_y += 30

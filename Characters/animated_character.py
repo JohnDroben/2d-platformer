@@ -66,6 +66,10 @@ class AnimatedCharacter(GameObject):
         """Делегирование управления движением Character"""
         self.character.move(direction)
 
+    def teleport(self, position):
+        """Делегирование перемещение игрока в заданную точку"""
+        self.character.teleport(position[0], position[1])
+
     def jump(self):
         """Делегирование прыжка Character"""
         self.character.jump()
