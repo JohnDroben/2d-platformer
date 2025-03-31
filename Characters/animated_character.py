@@ -50,6 +50,7 @@ class AnimatedCharacter(GameObject):
         self.rect = self.character.rect
         # Создание AnimatedObject
         self.animated_object = AnimatedObject(self.character)
+        self.on_ground = self.character.on_ground
 
         # Загрузка анимаций
         for action_name, action_data in animation_config.items():

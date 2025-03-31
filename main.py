@@ -18,7 +18,7 @@ pygame.display.set_caption("2D Platformer")
 # Инициализация звуков
 sound_manager = SoundManager()
 sound_manager.load_sounds()
-#sound_manager.play_music()
+sound_manager.play_music()
 
 # Цвета
 WHITE = (255, 255, 255)
@@ -121,7 +121,9 @@ def main():
             player.move(0)
 
         if keys[pygame.K_SPACE]:
-            player.jump()
+            if (player.on_ground):
+                sound_manager.play_sound('jump')
+                player.jump()
 
         # Обновление
         if not level_manager.current_level.completed:
