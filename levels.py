@@ -113,7 +113,7 @@ stitched_bg.blit(original_bg, (bg_width, 0))
 background_sprite = stitched_bg
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
 spike_sprite = load_sprite("spike.png", (139, 0, 0))
-platform_sprite = load_sprite("platform.png", (100, 100, 100))
+platform_sprite = load_sprite("tile_1.png", (100, 100, 100))
 moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
@@ -277,8 +277,8 @@ class HoleWithLift(Hole):
         )
 
         # Настраиваем границы движения
-        self.lift.upper_y = platform.rect.top - lift_height
-        self.lift.lower_y = platform.rect.top + 200
+        self.lift.upper_y = platform.rect.top - lift_height + 30
+        self.lift.lower_y = platform.rect.top + 300
 
     def update(self):
         """Обновление состояния люка и лифта"""
@@ -315,14 +315,6 @@ class Platform(GameObject):
         self.holes.append(hole)
         return hole
 
-    def add_vertical_wall(self, height: int):
-        """Добавляет вертикальную стену и генерирует люк с лифтом"""
-        self.has_vertical_wall = True
-        wall = StaticVerticalPlatform((self.rect.x, self.rect.y - height), height)
-
-        # Генерируем люк перед стеной
-        hole_width = 100
-        hole = self.add_hole(hole_width, self.rect.width - hole_width - 30)
 
     def draw(self, surface: pygame.Surface):
         """Отрисовка платформы и её отверстий"""
@@ -375,9 +367,9 @@ class StaticVerticalPlatform(Obstacle):
         :param position: Позиция платформы (x, y)
         :param height: Высота платформы
         """
-        super().__init__(position, (30, height), ObjectType.PLATFORM)
+        super().__init__(position, (30, 100), ObjectType.PLATFORM)
         self.sprite = vertical_platform_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (30, height))
+        self.sprite = pygame.transform.scale(self.sprite, (30, 100))
 
     def update(self):
         """Обновление состояния (пустое, так как платформа статична)"""
@@ -832,8 +824,8 @@ class Level1(Level):
         # Основные платформы
         platform_positions = [
             (0, SCREEN_HEIGHT - 150),  # Нижняя
-            (0, SCREEN_HEIGHT - 400),  # Средняя
-            (0, SCREEN_HEIGHT - 700)  # Верхняя
+            (0, SCREEN_HEIGHT - 450),  # Средняя
+            (0, SCREEN_HEIGHT - 750)  # Верхняя
         ]
         self.platforms = [Platform(pos, LEVEL_WIDTH) for pos in platform_positions]
         lower, middle, upper = self.platforms
@@ -883,7 +875,7 @@ class Level1(Level):
             for _ in range(2):
                 x = self.get_valid_x_position(1000)
                 y = platform.rect.y - random.randint(50, 150)
-                self.obstacles.append(Spike((x, platform.rect.y - 16), True))
+                self.obstacles.append(Spike((x, platform.rect.y - 30), True))
 
         # Генерация бонусов (монет)
         for platform in self.platforms:
@@ -904,7 +896,7 @@ class Level1(Level):
                 x = self.get_valid_x_position(1000)
                 height = random.randint(100, 200)
                 self.obstacles.append(
-                    StaticVerticalPlatform((x, middle.rect.y - height), height)
+                    StaticVerticalPlatform((x, middle.rect.y - 100), 100)
                 )
 
                 # Горизонтальные платформы
