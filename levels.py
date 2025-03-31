@@ -35,16 +35,16 @@ def load_sprite(name: str, default_color: Color) -> pygame.Surface:
 
 
 # Спрайты для всех объектов
-background_sprite = load_sprite("background", (20, 30, 15))
-coin_sprite = load_sprite("coin", (255, 215, 0))
-spike_sprite = load_sprite("spike", (139, 0, 0))
-platform_sprite = load_sprite("platform", (100, 100, 100))
-moving_platform_sprite = load_sprite("moving_platform", (150, 75, 0))
-saw_sprite = load_sprite("saw", (200, 200, 200))
-artifact_sprite = load_sprite("artifact", (255, 215, 0))
-portal_sprite = load_sprite("portal", (0, 255, 0))
-vertical_platform_sprite = load_sprite("vertical_platform", (120, 120, 120))
-horizontal_platform_sprite = load_sprite("horizontal_platform", (120, 120, 120))
+background_sprite = load_sprite("assets/imgs/level_1.png", (20, 30, 15))
+coin_sprite = load_sprite("assets/imgs/coin.png", (255, 215, 0))
+spike_sprite = load_sprite("assets/imgs/spike.png", (139, 0, 0))
+platform_sprite = load_sprite("assets/imgs/mov_platform.png", (100, 100, 100))
+moving_platform_sprite = load_sprite("assets/imgs/mov_platform.png", (150, 75, 0))
+saw_sprite = load_sprite("assets/imgs/saw.png", (200, 200, 200))
+artifact_sprite = load_sprite("assets/imgs/artifact.png", (255, 215, 0))
+portal_sprite = load_sprite("assets/imgs/door.png", (0, 255, 0))
+vertical_platform_sprite = load_sprite("assets/imgs/vertical_platform.png", (120, 120, 120))
+horizontal_platform_sprite = load_sprite("assets/imgs/mov_platform.png", (120, 120, 120))
 
 
 class GameObject(ABC):
