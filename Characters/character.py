@@ -3,7 +3,7 @@ from typing import cast
 
 from Characters.action import Action
 from Characters.type_object import ObjectType
-from levels import Platform
+from levels import Platform, MovingPlatformVertical
 from custom_logging import Logger
 
 class Character:
@@ -75,7 +75,7 @@ class Character:
 
       # Проверяем столкновение со всеми НЕпроходимыми платформами
       for platform in platforms:
-         if platform.object_type == ObjectType.PLATFORM:  # Только обычные платформы
+         if platform.object_type in (ObjectType.PLATFORM, ObjectType.MOVING_PLATFORM):  # Только обычные платформы
             if stand_rect.colliderect(platform.rect):
                return False
       return True
@@ -126,7 +126,7 @@ class Character:
       for obj in game_objects:
          if self.rect.colliderect(obj.rect):
             # Платформы (физические коллизии)
-            if obj.object_type == ObjectType.PLATFORM:
+            if obj.object_type is ObjectType.PLATFORM:
 
                platform = cast(Platform, obj)  # Явное приведение типа
                in_hole = False
@@ -137,7 +137,6 @@ class Character:
                   if self.is_fully_inside_horizontally(self.rect, hole.rect):
                      in_hole = True
                      break
-
                if not prev_rect.colliderect(obj.rect) and not in_hole:
 
                   if self.velocity_y > 0:  # Падение вниз
@@ -148,6 +147,25 @@ class Character:
                   elif self.velocity_y < 0:  # Движение вверх
                      self.rect.top = obj.rect.bottom
                      self.velocity_y = 0
+
+            if obj.object_type is ObjectType.MOVING_PLATFORM:
+
+               mov_platform = cast(MovingPlatformVertical, obj)  # Явное приведение типа
+               on_platform = False
+
+               if self.is_fully_inside_horizontally(self.rect, mov_platform.rect):
+                  on_platform = True
+
+               if on_platform:
+                  if self.velocity_y > 0:  # Падение вниз
+                     self.rect.bottom = obj.rect.top
+                     self.velocity_y = 0
+                     self.on_ground = True
+                     self.can_double_jump = False
+                  elif self.velocity_y < 0:  # Движение вверх
+                     #self.rect.top = obj.rect.bottom
+                     #self.velocity_y = 0
+                     pass
 
             # Враги (тxриггер)
             elif obj.object_type == ObjectType.ENEMY:
