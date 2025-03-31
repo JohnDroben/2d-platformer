@@ -2,7 +2,7 @@ from typing import Tuple
 from Characters.animated_character import AnimatedCharacter
 from Characters.type_object import ObjectType
 from custom_logging import Logger
-
+from time import sleep
 
 class Hero(AnimatedCharacter):
     """Класс для создания главного персонажа игры"""
@@ -50,12 +50,25 @@ class Hero(AnimatedCharacter):
             ground_level=ground_level,
             animation_config=animation_config
         )
-
+        self.INIT_LIVES = 5
+        self.lives = self.INIT_LIVES
         Logger().info(f"Hero created at position {position}")
 
-    def take_damage(self, amount: int):
+    def lose_life(self):
         """Метод для получения урона"""
-        Logger().warning(f"Hero took {amount} damage!")
+
+        if self.lives > 0:
+            self.lives = self.lives - 1
+            Logger().debug(f"The hero loses a life")
+        else:
+            Logger().debug(f"The hero dies")
+        sleep(1)
+
+    def is_live(self):
+        return self.lives > 0
+
+    def get_lives(self):
+        return self.lives, self.INIT_LIVES
 
     def collect_coin(self, amount: int = 1):
         """Метод для сбора монет"""

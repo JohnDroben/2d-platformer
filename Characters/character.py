@@ -23,6 +23,9 @@ class Character:
       self.direction = 1
       self.current_action = Action.IDLE
 
+   def teleport (self, x, y):
+      self.rect.x = x
+      self.rect.y = y
 
    def move(self, direction):
       self.direction = direction
@@ -132,8 +135,6 @@ class Character:
                in_hole = False
                holes = getattr(platform, 'holes', [])  #берём люки с платформы если они есть.
                for hole in holes:
-                  Logger().debug(f"platform.holes:{hole.rect}")
-                  Logger().debug(f"self.rect:{self.rect}")
                   if self.is_fully_inside_horizontally(self.rect, hole.rect):
                      in_hole = True
                      break
@@ -195,17 +196,13 @@ class Character:
                in_hole = False
                holes = getattr(platform, 'holes', [])  # берём люки с платформы если они есть.
                for hole in holes:
-                  Logger().debug(f"platform.holes:{hole.rect}")
-                  Logger().debug(f"self.rect:{self.rect}")
                   if self.is_fully_inside_horizontally(prev_rect, hole.rect):
                      in_hole = True
                      if self.direction == 1:  # Вправо
                         if self.rect.right > hole.rect.right:
-                           Logger().debug(f"hole.rect.right:{hole.rect.right}")
                            self.rect.right = hole.rect.right
                      elif self.direction == -1:  # Влево
                         if self.rect.left < hole.rect.left:
-                           Logger().debug(f"hole.rect.left:{hole.rect.left}")
                            self.rect.left = hole.rect.left
                      break
                if not in_hole:
