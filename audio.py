@@ -3,16 +3,18 @@ import pygame
 
 class SoundManager:
     def __init__(self):
+        pygame.mixer.pre_init(44100, -16, 2, 32)  # Оптимизация буфера
+        pygame.mixer.set_num_channels(8)  # Установка количества каналов
         self.sounds = {}
         self.music_volume = 0.5
         self.sfx_volume = 0.7
 
     def load_sounds(self):
-        # Загрузка звуков
+        # Загрузка звуков в формате WAV
         self.sounds = {
-            'jump': pygame.mixer.Sound('assets/sounds/jump.mp3'),
-            'coin': pygame.mixer.Sound('assets/sounds/coin.mp3'),
-            'death': pygame.mixer.Sound('assets/sounds/death.mp3')
+            'jump': pygame.mixer.Sound('Sounds/jump.wav'),
+            'coin': pygame.mixer.Sound('Sounds/coin.wav'),
+            'death': pygame.mixer.Sound('Sounds/death.wav')
         }
 
         # Настройка громкости
@@ -20,7 +22,7 @@ class SoundManager:
             sound.set_volume(self.sfx_volume)
 
     def play_music(self):
-        pygame.mixer.music.load('assets/sounds/background.mp3')
+        pygame.mixer.music.load('Sounds/background.mp3')
         pygame.mixer.music.set_volume(self.music_volume)
         pygame.mixer.music.play(-1)  # Зацикливание
 

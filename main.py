@@ -1,17 +1,24 @@
 import pygame
 import sys
+import time
 from levels import LevelManager, LEVEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT
 from custom_logging import Logger
 
 from Characters.action import Action
 from Characters.Hero.hero import Hero
 from Characters.type_object import ObjectType
+from audio import SoundManager # класс управления звуками
 
 
 # Инициализация Pygame
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("2D Platformer")
+
+# Инициализация звуков
+sound_manager = SoundManager()
+sound_manager.load_sounds()
+#sound_manager.play_music()
 
 # Цвета
 WHITE = (255, 255, 255)
@@ -32,6 +39,8 @@ def main():
     level_manager = LevelManager()
     level_manager.reset()
     Logger().initialize()
+
+
 
     debug_mode = False  # По умолчанию False, можно менять на True для тестов
     level_manager = LevelManager(debug_mode=debug_mode)
@@ -89,13 +98,8 @@ def main():
                     level_manager.current_level.remove_start_portal()  # Добавляем удаление портала
                     game_over = False
 
-            # Управление
+        # Управление
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_s]:
-            player.sit_down()
-        else:
-            if player.is_sitting():
-                player.stand_up(level_manager.current_level.get_all_game_objects())
 
         if keys[pygame.K_s]:
             player.sit_down()
@@ -139,6 +143,7 @@ def main():
             # Проверка опасных столкновений
             if level_manager.current_level.check_hazard_collision(player.rect):
                 # Респавн при смерти
+                sound_manager.play_sound('death')
                 player = Hero(start_pos)
 
             # Проверка падения в яму
@@ -150,6 +155,8 @@ def main():
 
             # Сбор бонусов и артефактов
             collected_points = level_manager.current_level.collect_bonuses(player.rect)
+            if collected_points:
+                sound_manager.play_sound('coin')
             level_manager.current_level.score += collected_points  # Добавляем очки к уровню
             level_manager.current_level.collect_artifacts(player.rect)
 
@@ -184,7 +191,6 @@ def main():
         # Отрисовка игрока
         player.draw(screen, camera_offset)
 
-        #player_anim.draw(screen)
         # UI
         info_y = 20
         for text in [
