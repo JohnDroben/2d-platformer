@@ -77,7 +77,7 @@ coin_animation_frames = load_coin_frames()
 
 
 # Загружаем оригинальный фон
-original_bg = load_sprite("fon_2.jpg", (20, 30, 15))
+original_bg = load_sprite("fon_1.jpg", (20, 30, 15))
 
 # Создаем склеенный фон (2x ширины)
 bg_width, bg_height = original_bg.get_size()
