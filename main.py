@@ -14,6 +14,8 @@ from audio import SoundManager # класс управления звуками
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("2D Platformer")
+#Инициализация логгера
+Logger().initialize()
 
 # Инициализация звуков
 sound_manager = SoundManager()
@@ -44,7 +46,7 @@ def main():
     clock = pygame.time.Clock()
     level_manager = LevelManager()
     level_manager.reset()
-    Logger().initialize()
+
 
     debug_mode = False  # По умолчанию False, можно менять на True для тестов
     level_manager = LevelManager(debug_mode=debug_mode)

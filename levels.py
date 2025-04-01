@@ -115,13 +115,13 @@ for i in range(5):
 background_sprite = stitched_bg
 
 # Загружаем оригинальный спрайт платформы
-original_pf = load_sprite("tile_2.png", (100, 100, 100))  # Исходный спрайт
+original_pf = load_sprite("tile_1.png", (100, 100, 100))  # Исходный спрайт
 pf_width, pf_height = original_pf.get_size()
 platform_sprite = original_pf  # Используем оригинальный размер спрайта
 
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
 spike_sprite = load_sprite("spike.png", (139, 0, 0))
-moving_platform_sprite = load_sprite("platform.png", (150, 75, 0))
+moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
 portal_sprite = load_sprite("door.png", (0, 255, 0))
@@ -634,16 +634,16 @@ class Level(ABC):
 
     def is_position_valid(self, x: int, y: int, width: int, height: int) -> bool:
         """Проверяет, что новая позиция не пересекается с существующими объектами"""
-        new_rect = pygame.Rect(x, y, width, height)
+        new_rect = pygame.Rect(x, y, width, height).inflate(100, 100)  # Добавляем отступы
         for (used_x, used_y, used_w, used_h) in self.used_positions:
-            existing_rect = pygame.Rect(used_x, used_y, used_w, used_h)
-            if new_rect.inflate(500, 500).colliderect(existing_rect):
+            existing_rect = pygame.Rect(used_x, used_y, used_w, used_h).inflate(100, 100)
+            if new_rect.colliderect(existing_rect):
                 return False
         return True
 
     def get_valid_position(self, width: int, height: int, platform: Platform = None) -> tuple:
         """Генерирует валидную позицию с привязкой к платформе (если указана)"""
-        max_attempts = 1000
+        max_attempts = 100
         for _ in range(max_attempts):
             if platform:
                 x = random.randint(50, self.width - width - 50)
@@ -656,10 +656,9 @@ class Level(ABC):
                 self.used_positions.append((x, y, width, height))
                 return (x, y)
 
-        # Если не нашли идеальную позицию, возвращаем хотя бы по X
-        x = random.randint(50, self.width - width - 50)
-        y = random.randint(50, self.height - height - 50)
-        return (x, y)
+        # Если не нашли идеальную позицию, возвращаем случайную с большими отступами
+        return (random.randint(100, self.width - width - 100),
+                random.randint(100, self.height - height - 100))
 
     def remove_start_portal(self):
         """Устанавливает таймер удаления стартового портала через 3 секунды"""
@@ -835,10 +834,6 @@ class Level1(Level):
         self.used_x_positions = []
         self.used_positions = []
 
-        # Общие параметры генерации
-        OBJECT_X_MARGIN = 50  # Отступ от краев платформы
-        MIN_DISTANCE = 1000  # Минимальное расстояние между объектами
-
         # Основные платформы
         platform_positions = [
             (0, SCREEN_HEIGHT - 150),  # Нижняя
@@ -848,24 +843,23 @@ class Level1(Level):
         self.platforms = [Platform(pos, LEVEL_WIDTH) for pos in platform_positions]
         lower, middle, upper = self.platforms
 
-        # Разбиваем уровень на 3 вертикальные зоны
-        zone_width = self.width // 3
-        zones = [
-            (0, zone_width),
-            (zone_width, zone_width * 2),
-            (zone_width * 2, self.width)
-        ]
+        # Разбиваем уровень на 5 вертикальных зон для лучшего распределения
+        zone_width = self.width // 5
+        zones = [(i * zone_width, (i + 1) * zone_width) for i in range(5)]
 
-        # Распределяем объекты по зонам
-        for platform in self.platforms:
-            zone = random.choice(zones)
-            x = random.randint(zone[0] + 100, zone[1] - 100)
+        # Словарь для отслеживания занятых зон на каждой платформе
+        used_zones = {
+            lower: [],
+            middle: [],
+            upper: []
+        }
 
-
-        # Генерация HoleWithLift для среднего и верхнего уровня
+        # Генерация HoleWithLift для среднего и верхнего уровня (по одному в разных зонах)
         for platform in [middle, upper]:
-            for _ in range(2):
-                x = self.get_valid_x_position(1000)
+            available_zones = [z for z in zones if z not in used_zones[platform]]
+            if available_zones:
+                zone = random.choice(available_zones)
+                x = random.randint(zone[0] + 150, zone[1] - 270)  # 270 = 120 (ширина) + 150 (отступ)
                 hole = HoleWithLift(
                     platform=platform,
                     width=120,
@@ -874,73 +868,92 @@ class Level1(Level):
                 )
                 platform.holes.append(hole)
                 self.obstacles.append(hole.lift)
-        # Генерация Hole для нижнего уровня
-        for platform in [lower]:
+                used_zones[platform].append(zone)
+
+        # Генерация Hole для нижнего уровня (в разных зонах)
+        available_zones = [z for z in zones if z not in used_zones[lower]]
+        if len(available_zones) >= 2:
             for _ in range(2):
-                x = self.get_valid_x_position(1000)
+                zone = random.choice(available_zones)
+                available_zones.remove(zone)
+                x = random.randint(zone[0] + 150, zone[1] - 270)
                 hole = Hole(
-                    platform=platform,
+                    platform=lower,
                     width=120,
                     position_x=x,
                 )
-                platform.holes.append(hole)
+                lower.holes.append(hole)
 
-
-
-        # Для КАЖДОЙ платформы (нижняя, средняя, верхняя) добавляем:
-        # Генерация шипов на платформах
+        # Генерация шипов на платформах (по одному в разных зонах)
         for platform in [lower, middle, upper]:
-            for _ in range(2):
-                x = self.get_valid_x_position(1000)
-                y = platform.rect.y - random.randint(50, 150)
-                self.obstacles.append(Spike((x, platform.rect.y - 30), True))
+            available_zones = [z for z in zones if z not in used_zones[platform]]
+            if len(available_zones) >= 2:
+                for _ in range(4):
+                    zone = random.choice(available_zones)
+                    available_zones.remove(zone)
+                    x = random.randint(zone[0] + 50, zone[1] - 50)
+                    self.obstacles.append(Spike((x, platform.rect.y - 30), True))
 
-
-
-            # Генерация дисковых пил (CircularSaw)
-            for _ in range(2):  # 2 пилы на уровне
-                x = self.get_valid_x_position(1000)
+        # Генерация дисковых пил (по одной на уровне в разных зонах)
+        saw_zones = zones.copy()
+        for _ in range(3):
+            if saw_zones:
+                zone = random.choice(saw_zones)
+                saw_zones.remove(zone)
+                x = random.randint(zone[0] + 100, zone[1] - 100)
                 y = random.choice([middle.rect.y - 150, upper.rect.y - 200])
                 move_range = random.randint(80, 150)
                 self.obstacles.append(CircularSaw((x, y), move_range))
 
-            # Генерация вертикальных стен
-            for _ in range(1):
-                x = self.get_valid_x_position(1000)
+        # Генерация вертикальных стен (в разных зонах)
+        wall_zones = zones.copy()
+        for _ in range(1):
+            if wall_zones:
+                zone = random.choice(wall_zones)
+                wall_zones.remove(zone)
+                x = random.randint(zone[0] + 50, zone[1] - 50)
                 height = random.randint(100, 200)
                 self.obstacles.append(
-                    StaticVerticalPlatform((x, middle.rect.y - 100), 100)
+                    StaticVerticalPlatform((x, middle.rect.y - height), height)
                 )
 
-                # Горизонтальные платформы
-            for _ in range(2):
-                x = self.get_valid_x_position(1000)
+        # Генерация горизонтальных платформ (в разных зонах)
+        platform_zones = zones.copy()
+        for _ in range(2):
+            if platform_zones:
+                zone = random.choice(platform_zones)
+                platform_zones.remove(zone)
+                x = random.randint(zone[0] + 100, zone[1] - 200)
                 height = random.randint(100, 200)
                 self.obstacles.append(
-                    StaticHorizontalPlatform((x, middle.rect.y - height), height)
+                    StaticHorizontalPlatform((x, middle.rect.y - height), 200)
                 )
 
-            # Генерация бонусов (монет)
-            for platform in self.platforms:
-                for _ in range(20):
-                    x = self.get_valid_x_position(550)
-                    y = platform.rect.y - random.randint(50, 150)
-                    self.bonuses.append(Coin((x, y)))
+        # Генерация бонусов (монет) с равномерным распределением
+        for platform in self.platforms:
+            coins_per_platform = 30
+            step = (self.width - 200) // coins_per_platform
 
-        # Генерация артефакта
-        artifact_x = self.get_valid_x_position(40)
+            for i in range(coins_per_platform):
+                x = 100 + i * step + random.randint(-30, 30)
+                y = platform.rect.y - random.randint(50, 150)
+                self.bonuses.append(Coin((x, y)))
+
+        # Генерация артефакта в свободной зоне
+        artifact_zone = random.choice(zones)
+        artifact_x = random.randint(artifact_zone[0] + 100, artifact_zone[1] - 100)
         self.artifacts.append(Artifact((
             artifact_x,
             middle.rect.y - 50
         )))
 
-
-        # Стартовый портал на нижней платформе
-        start_x = random.randint(lower.rect.left + 100, lower.rect.right - 150)
+        # Портал входа и выхода в разных зонах
+        start_zone = random.choice(zones)
+        start_x = random.randint(start_zone[0] + 100, start_zone[0] + 300)
         start_portal = Portal((start_x, lower.rect.top - 100), False)
 
-        # Финишный портал на верхней платформе
-        finish_x = random.randint(upper.rect.left + 100, upper.rect.right - 150)
+        exit_zone = random.choice([z for z in zones if z != start_zone])
+        finish_x = random.randint(exit_zone[0] + 100, exit_zone[0] + 300)
         finish_portal = Portal((finish_x, upper.rect.top - 100), True)
         finish_portal.visible = False
 
