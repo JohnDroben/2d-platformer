@@ -9,7 +9,7 @@ import os
 # Константы
 SCREEN_WIDTH = 1280  # Ширина экрана
 SCREEN_HEIGHT = 960  # Высота экрана
-LEVEL_WIDTH = SCREEN_WIDTH * 3  # Ширина уровня (в 3 раза больше ширины экрана)
+LEVEL_WIDTH = SCREEN_WIDTH * 5  # Ширина уровня (в 5 раза больше ширины экрана)
 PLATFORM_HEIGHT = 30  # Высота платформы
 PLATFORM_COUNT = 3  # Количество уровней платформ
 PLATFORM_GAP = 200  # Расстояние между платформами
@@ -100,21 +100,28 @@ def load_coin_frames():
 
 coin_animation_frames = load_coin_frames()
 
-# Спрайты для всех объектов
+
 # Загружаем оригинальный фон
 original_bg = load_sprite("level_1.png", (20, 30, 15))
 
 # Создаем склеенный фон (2x ширины)
 bg_width, bg_height = original_bg.get_size()
-stitched_bg = pygame.Surface((bg_width * 2, bg_height))
+stitched_bg = pygame.Surface((bg_width * 5, bg_height))
 stitched_bg.blit(original_bg, (0, 0))
 stitched_bg.blit(original_bg, (bg_width, 0))
+for i in range(5):
+    stitched_bg.blit(original_bg, (bg_width * i, 0))
 
 background_sprite = stitched_bg
+
+# Загружаем оригинальный спрайт платформы
+original_pf = load_sprite("tile_2.png", (100, 100, 100))  # Исходный спрайт
+pf_width, pf_height = original_pf.get_size()
+platform_sprite = original_pf  # Используем оригинальный размер спрайта
+
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
 spike_sprite = load_sprite("spike.png", (139, 0, 0))
-platform_sprite = load_sprite("tile_1.png", (100, 100, 100))
-moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
+moving_platform_sprite = load_sprite("platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
 portal_sprite = load_sprite("door.png", (0, 255, 0))
@@ -298,6 +305,7 @@ class HoleWithLift(Hole):
 class Platform(GameObject):
     """Платформа с возможностью создания отверстий"""
 
+
     def __init__(self, position: Position, width: int):
         super().__init__(position, (width, PLATFORM_HEIGHT), ObjectType.PLATFORM)
         self.sprite = platform_sprite
@@ -317,8 +325,18 @@ class Platform(GameObject):
 
 
     def draw(self, surface: pygame.Surface):
-        """Отрисовка платформы и её отверстий"""
-        surface.blit(self.sprite, self.rect)
+        """Отрисовка платформы со склеенным спрайтом"""
+        # Получаем размеры оригинального спрайта платформы
+        sprite_width, sprite_height = platform_sprite.get_size()
+
+        # Вычисляем сколько раз нужно повторить спрайт
+        repeat_count = 200
+
+        # Рисуем склеенные спрайты
+        for i in range(repeat_count):
+            surface.blit(platform_sprite, (self.rect.x + i * sprite_width, self.rect.y))
+
+        # Отрисовка отверстий
         for hole in self.holes:
             hole.draw(surface)
 
@@ -803,10 +821,10 @@ class Level1(Level):
                 self.used_x_positions.append(x)
                 return x
 
-        return random.randint(50, self.width - width - 50)
+        return random.randint(500, self.width - width - 500)
 
         # Если не удалось найти позицию, возвращаем случайную
-        return random.randint(50, self.width - width - 50)
+        return random.randint(500, self.width - width - 500)
 
     def generate_level(self):
         """Генерация уровня с правильным размещением объектов"""
@@ -856,7 +874,7 @@ class Level1(Level):
                 )
                 platform.holes.append(hole)
                 self.obstacles.append(hole.lift)
-
+        # Генерация Hole для нижнего уровня
         for platform in [lower]:
             for _ in range(2):
                 x = self.get_valid_x_position(1000)
@@ -877,12 +895,7 @@ class Level1(Level):
                 y = platform.rect.y - random.randint(50, 150)
                 self.obstacles.append(Spike((x, platform.rect.y - 30), True))
 
-        # Генерация бонусов (монет)
-        for platform in self.platforms:
-            for _ in range(20):
-                x = self.get_valid_x_position(550)
-                y = platform.rect.y - random.randint(50, 150)
-                self.bonuses.append(Coin((x, y)))
+
 
             # Генерация дисковых пил (CircularSaw)
             for _ in range(2):  # 2 пилы на уровне
@@ -906,6 +919,13 @@ class Level1(Level):
                 self.obstacles.append(
                     StaticHorizontalPlatform((x, middle.rect.y - height), height)
                 )
+
+            # Генерация бонусов (монет)
+            for platform in self.platforms:
+                for _ in range(20):
+                    x = self.get_valid_x_position(550)
+                    y = platform.rect.y - random.randint(50, 150)
+                    self.bonuses.append(Coin((x, y)))
 
         # Генерация артефакта
         artifact_x = self.get_valid_x_position(40)
