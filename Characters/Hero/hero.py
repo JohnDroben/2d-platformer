@@ -31,12 +31,12 @@ class Hero(AnimatedCharacter):
         # Конфигурация анимаций для героя
         path_to_assets = "Characters/assets/sprites"
         animation_config = {
-            "IDLE": {"file_path": f"{path_to_assets}/idle.png", "frame_count": 7},
-            "MOVE": {"file_path": f"{path_to_assets}/idle.png", "frame_count": 7},
-            "JUMP": {"file_path": f"{path_to_assets}/jump.png", "frame_count": 13},
-            "SIT": {"file_path": f"{path_to_assets}/sit.png", "frame_count": 4, "sit_frames": True},
-            "SIT_MOVE": {"file_path": f"{path_to_assets}/sit.png", "frame_count": 4, "sit_frames": True},
-            "SIT_IDLE": {"file_path": f"{path_to_assets}/sit.png", "frame_count": 4, "sit_frames": True},
+            "IDLE": {"file_path": f"{path_to_assets}/player_stand.png", "frame_count": 1},
+            "MOVE": {"file_path": f"{path_to_assets}/player_walk.png", "frame_count": 2},
+            "JUMP": {"file_path": f"{path_to_assets}/player_jump.png", "frame_count": 1},
+            "SIT": {"file_path": f"{path_to_assets}/player_duck.png", "frame_count": 1, "sit_frames": True},
+            "SIT_MOVE": {"file_path": f"{path_to_assets}/player_duck.png", "frame_count": 1, "sit_frames": True},
+            "SIT_IDLE": {"file_path": f"{path_to_assets}/player_duck.png", "frame_count": 1, "sit_frames": True},
         }
 
         # Вызов конструктора родительского класса
