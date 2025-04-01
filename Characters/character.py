@@ -236,8 +236,10 @@ class Character:
             self.current_action = Action.IDLE if self.direction == 0 else Action.MOVE
       else:
          # Если в воздухе, но действие не прыжок
-         if self.current_action != Action.JUMP:
-            self.current_action = Action.JUMP
+         FALL_THRESHOLD_VELOCITY =  5*self.gravity
+         if self.velocity_y > FALL_THRESHOLD_VELOCITY:
+            if self.current_action != Action.JUMP:
+               self.current_action = Action.JUMP
 
       after_rect = self.rect
 
