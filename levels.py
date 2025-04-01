@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional
 from Characters.type_object import ObjectType
 from custom_logging import Logger
+import os
 
 # Константы
 SCREEN_WIDTH = 1280  # Ширина экрана
@@ -19,33 +20,116 @@ Position = Tuple[int, int]  # Позиция объекта (x, y)
 Size = Tuple[int, int]  # Размер объекта (ширина, высота)
 
 
-# Функция загрузки спрайтов
-def load_sprite(name: str, default_color: Color) -> pygame.Surface:
-    """Загрузка спрайта или создание заглушки с указанным цветом"""
-    try:
-        # Здесь будет реальная загрузка изображений, пока используем заглушки
-        sprite = pygame.Surface((32, 32)) if name != "background" else pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        sprite.fill(default_color)
-        return sprite
-    except:
-        # В случае ошибки возвращаем заглушку
-        sprite = pygame.Surface((32, 32)) if name != "background" else pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        sprite.fill(default_color)
-        return sprite
+def check_assets():
+    required_files = [
+        "level_1.png",
+        "coin.png",
+        "coin_1.png",
+        "coin_2.png",
+        "coin_3.png",
+        "spike.png",
+        "mov_platform.png",
+        "saw.png",
+        "artifact.png",
+        "door.png",
+        "vertical_platform.png"
+    ]
 
+    missing = []
+    for file in required_files:
+        path = os.path.join("assets", "imgs", file)
+        if not os.path.exists(path):
+            missing.append(file)
+        print("⚠ файл загружен:")
+
+    if missing:
+        print("⚠ Отсутствуют файлы:", ", ".join(missing))
+        return False
+    return True
+
+
+def load_sprite(name: str, default_color: tuple) -> pygame.Surface:
+    """Безопасная загрузка спрайтов с проверкой инициализации"""
+    try:
+        if not pygame.get_init():
+            pygame.init()
+            pygame.display.set_mode((1, 1))  # Минимальный дисплей
+
+        path = os.path.join("assets", "imgs", name)
+        print(f"Пытаюсь загрузить {path}, существует? {os.path.exists(path)}")
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Файл {path} не найден")
+
+        sprite = pygame.image.load(path)
+        print(f"✅ Успешно загружен {name}, размер {sprite.get_size()}")
+        return sprite.convert_alpha() if pygame.display.get_init() else sprite
+
+    except Exception as e:
+        print(f"Ошибка загрузки {name}: {e}")
+        size = (SCREEN_WIDTH, SCREEN_HEIGHT) if name == "level_1.png" else (32, 32)
+        stub = pygame.Surface(size)
+        stub.fill(default_color)
+        return stub
+
+
+def load_coin_frames():
+    frames = []
+    base_size = None
+
+    for i in range(1, 5):
+        try:
+            frame = pygame.image.load(f"assets/imgs/coin_{i}.png").convert_alpha()
+
+            # Проверка одинаковости размеров
+            if base_size is None:
+                base_size = frame.get_size()
+            elif frame.get_size() != base_size:
+                print(f"Ошибка: coin_{i}.png имеет размер {frame.get_size()}, ожидалось {base_size}")
+                frame = pygame.transform.scale(frame, base_size)
+
+            frames.append(frame)
+        except Exception as e:
+            print(f"Ошибка загрузки coin_{i}.png: {e}")
+            # Создаем заглушку
+            stub = pygame.Surface(base_size or (32, 32), pygame.SRCALPHA)
+            stub.fill((255, 215, 0))  # Золотой цвет
+            frames.append(stub)
+
+    return frames
+
+
+coin_animation_frames = load_coin_frames()
 
 # Спрайты для всех объектов
-background_sprite = load_sprite("background", (20, 30, 15))
-coin_sprite = load_sprite("coin", (255, 215, 0))
-spike_sprite = load_sprite("spike", (139, 0, 0))
-platform_sprite = load_sprite("platform", (100, 100, 100))
-moving_platform_sprite = load_sprite("moving_platform", (150, 75, 0))
-saw_sprite = load_sprite("saw", (200, 200, 200))
-artifact_sprite = load_sprite("artifact", (255, 215, 0))
-portal_sprite = load_sprite("portal", (0, 255, 0))
-vertical_platform_sprite = load_sprite("vertical_platform", (120, 120, 120))
-horizontal_platform_sprite = load_sprite("horizontal_platform", (120, 120, 120))
+# Загружаем оригинальный фон
+original_bg = load_sprite("level_1.png", (20, 30, 15))
 
+# Создаем склеенный фон (2x ширины)
+bg_width, bg_height = original_bg.get_size()
+stitched_bg = pygame.Surface((bg_width * 2, bg_height))
+stitched_bg.blit(original_bg, (0, 0))
+stitched_bg.blit(original_bg, (bg_width, 0))
+
+background_sprite = stitched_bg
+# coin_sprite = load_sprite("coin.png", (255, 215, 0))
+spike_sprite = load_sprite("spike.png", (139, 0, 0))
+platform_sprite = load_sprite("platform.png", (100, 100, 100))
+moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
+saw_sprite = load_sprite("saw.png", (200, 200, 200))
+artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
+portal_sprite = load_sprite("door.png", (0, 255, 0))
+vertical_platform_sprite = load_sprite("vertical_platform.png", (120, 120, 120))
+horizontal_platform_sprite = load_sprite("platform.png", (120, 120, 120))
+
+
+# Загрузка кадров анимации монеты
+coin_animation_frames = [
+load_sprite("coin.png", (255, 215, 0)),
+    load_sprite("coin_1.png", (255, 215, 0)),  # Желтый как цвет по умолчанию
+    load_sprite("coin_2.png", (255, 215, 0)),
+    load_sprite("coin_3.png", (255, 215, 0))
+
+]
 
 class GameObject(ABC):
     """Базовый класс для всех игровых объектов"""
@@ -99,29 +183,39 @@ class Bonus(GameObject):
 
 
 class Coin(Bonus):
-    """Монеты - базовые бонусы"""
-
     def __init__(self, position: Position):
-        """
-        Инициализация монеты.
+        # Загружаем первый кадр для определения базового размера
+        base_frame = coin_animation_frames[0]
+        sprite_width, sprite_height = base_frame.get_size()
 
-        :param position: Позиция монеты (x, y)
-        """
-        super().__init__(position, (16, 16), 100, ObjectType.COIN)
-        self.sprite = coin_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (16, 16))
+        # Создаем хитбокс ПРОПОРЦИОНАЛЬНО спрайту
+        hitbox_width = max(7, sprite_width)  # Минимальная ширина 7 пикселей
+        hitbox_height = sprite_height  # Высота как у спрайта
 
-    def collect(self) -> int:
-        self.is_active = False
-        return self.points  # Например, return 100
+        super().__init__(position, (hitbox_width, hitbox_height), 100, ObjectType.COIN)
+
+        self.frames = coin_animation_frames
+        self.current_frame = 0
+        self.animation_speed = 0.15
+        self.last_update = pygame.time.get_ticks()
+
+        # Центрируем хитбокс относительно спрайта
+        self.sprite_offset_x = (hitbox_width - sprite_width) // 2
+        self.sprite_offset_y = (hitbox_height - sprite_height) // 2
 
     def update(self):
-        """Обновление состояния монеты (пустое, так как монета не движется)"""
-        pass
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.animation_speed * 1000:
+            self.current_frame = (self.current_frame + 1) % len(self.frames)
+            self.last_update = now
 
     def draw(self, surface: pygame.Surface):
-        """Отрисовка монеты на поверхности"""
-        surface.blit(self.sprite, self.rect)
+        current_sprite = self.frames[self.current_frame]
+        # Позиция отрисовки с учетом смещения
+        surface.blit(current_sprite,
+                     (self.rect.x + self.sprite_offset_x,
+                      self.rect.y + self.sprite_offset_y))
+
 
 
 class Obstacle(GameObject):
@@ -318,24 +412,32 @@ class StaticHorizontalPlatform(Obstacle):
 
 
 class Spike(Obstacle):
-    """Шипы - опасные препятствия"""
-
-    def __init__(self, position: Position, horizontal: bool = False):
+    def __init__(self, position: Position, is_floor_spike: bool = True):
         """
-        Инициализация шипов.
-
         :param position: Позиция шипов (x, y)
-        :param horizontal: Флаг горизонтального расположения шипов
+        :param is_floor_spike: True - шипы на полу (смотрят вверх), False - на стене (смотрят вправо)
         """
-        size = (32, 16) if horizontal else (32, 32)
+        # Размеры для разных ориентаций
+        size = (32, 32)  # Базовый размер
+
         super().__init__(position, size, ObjectType.SPIKE)
-        self.sprite = spike_sprite
-        self.horizontal = horizontal
-        if horizontal:
-            self.sprite = pygame.transform.scale(self.sprite, (32, 16))
-            self.sprite = pygame.transform.rotate(self.sprite, 90)
+
+        # Загружаем оригинальный спрайт
+        original_sprite = spike_sprite
+
+        # Трансформируем спрайт в зависимости от ориентации
+        if is_floor_spike:
+            # Шипы на полу (нормальная ориентация)
+            self.sprite = pygame.transform.scale(original_sprite, (32, 32))
         else:
-            self.sprite = pygame.transform.scale(self.sprite, (32, 32))
+            # Шипы на стене (повернуты на 90 градусов)
+            self.sprite = pygame.transform.rotate(
+                pygame.transform.scale(original_sprite, (32, 32)),
+                -90  # Поворот против часовой стрелки
+            )
+
+        # Хитбокс должен соответствовать спрайту
+        self.rect = self.sprite.get_rect(topleft=position)
 
     def update(self):
         """Обновление состояния шипов (пустое, так как шипы не движутся)"""
@@ -356,26 +458,37 @@ class CircularSaw(Obstacle):
         :param position: Позиция пилы (x, y)
         :param move_range: Диапазон движения пилы
         """
+        # Загружаем спрайт внутри класса
+        try:
+            self.sprite = pygame.image.load("assets/images/circular_saw.png").convert_alpha()
+            self.sprite = pygame.transform.scale(self.sprite, (50, 50))
+        except:
+            # Создаем временный спрайт, если загрузка не удалась
+            self.sprite = pygame.Surface((50, 50), pygame.SRCALPHA)
+            pygame.draw.circle(self.sprite, (255, 0, 0), (25, 25), 25)
+            pygame.draw.circle(self.sprite, (200, 200, 200), (25, 25), 20)
+
         super().__init__(position, (50, 50), ObjectType.CIRCULAR_SAW)
-        self.sprite = saw_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (50, 50))
-        self.original_y = position[1]  # Начальная позиция по y
-        self.move_range = move_range  # Диапазон движения
-        self.speed = 3  # Скорость движения
-        self.direction = 1  # Направление движения (1 - вниз, -1 - вверх)
+        self.original_y = position[1]
+        self.move_range = move_range
+        self.speed = 3
+        self.direction = 1
+        self.rotation_angle = 0
 
     def update(self):
         """Обновление состояния пилы"""
-        self.rect.y += self.speed * self.direction  # Движение пилы
+        self.rect.y += self.speed * self.direction
         if self.rect.y > self.original_y + self.move_range:
-            self.direction = -1  # Изменение направления на противоположное
+            self.direction = -1
         elif self.rect.y < self.original_y - self.move_range:
-            self.direction = 1  # Изменение направления на противоположное
+            self.direction = 1
+
+        # Обновляем угол вращения
+        self.rotation_angle = (self.rotation_angle + 10) % 360
 
     def draw(self, surface: pygame.Surface):
-        """Отрисовка пилы на поверхности"""
-        # Вращаем спрайт пилы для анимации
-        rotated_sprite = pygame.transform.rotate(self.sprite, pygame.time.get_ticks() % 360)
+        """Отрисовка пилы с вращением"""
+        rotated_sprite = pygame.transform.rotate(self.sprite, self.rotation_angle)
         new_rect = rotated_sprite.get_rect(center=self.rect.center)
         surface.blit(rotated_sprite, new_rect.topleft)
 
@@ -418,13 +531,23 @@ class Portal(GameObject):
         """
         super().__init__(position, (50, 100), ObjectType.PORTAL)
         self.sprite = portal_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (50, 100))
         self.is_exit = is_exit  # True - выходной портал, False - входной
         self.is_finish = is_exit  # Синоним для совместимости с существующим кодом
         self.disappear_timer = None  # Таймер исчезновения
         self.visible = True  # Флаг видимости
         self.color = (0, 255, 0) if is_exit else (255, 0, 0)  # Зеленый для выхода, красный для входа
         self.disappear_alpha = 255  # Полностью непрозрачный
+
+        try:
+            self.sprite = pygame.image.load("assets/imgs/door.png").convert_alpha()
+            self.sprite = pygame.transform.scale(self.sprite, (50, 100))
+            print(f"Портал: изображение успешно загружено, размер {self.sprite.get_size()}")
+        except Exception as e:
+            print(f"Ошибка загрузки изображения портала: {e}")
+            # Создаем заглушку
+            self.sprite = pygame.Surface((50, 100), pygame.SRCALPHA)
+            self.sprite.fill((0, 255, 0) if is_exit else (255, 0, 0))
+            print("Создана заглушка для портала")
 
     def disappear_after(self, milliseconds: int):
         """Устанавливает таймер исчезновения портала"""
@@ -436,18 +559,35 @@ class Portal(GameObject):
             progress = (pygame.time.get_ticks() - self.disappear_timer) / self.disappear_delay
             self.disappear_alpha = max(0, 255 - int(255 * progress))
 
+
+
     def draw(self, surface: pygame.Surface):
         """Отрисовка портала"""
+        print(f"Отрисовка портала: pos={self.rect.topleft}, видимый={self.disappear_alpha > 0}")
         if self.visible:
-            s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
-            pygame.draw.rect(s, (*self.color, self.disappear_alpha), (0, 0, self.rect.width, self.rect.height))
-            surface.blit(s, self.rect)
+            if self.sprite:
+                print(f"✅ sprite существует, размер: {self.sprite.get_size()}")
+                surface.blit(self.sprite, self.rect)  # <-- Здесь рисуем
+            else:
+                print("❌ Ошибка: sprite = None, рисуем заглушку")
+                s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+                pygame.draw.rect(s, (*self.color, self.disappear_alpha), (0, 0, self.rect.width, self.rect.height))
+                surface.blit(s, self.rect)
 
 
 class Level(ABC):
     """Абстрактный базовый класс уровня"""
 
     def __init__(self, level_num: int):
+
+        if not pygame.display.get_init():
+            pygame.init()
+            pygame.display.set_mode((1, 1))
+
+            # Теперь безопасно загружаем спрайты
+        self.background = load_sprite("level_1.png", (20, 30, 15))
+        print(f"Размер фона: {self.background.get_size()}")  # Должно быть (1280, 960)
+
         """
         Инициализация уровня.
 
@@ -493,7 +633,7 @@ class Level(ABC):
 
     def get_valid_position(self, width: int, height: int, platform: Platform = None) -> tuple:
         """Генерирует валидную позицию с привязкой к платформе (если указана)"""
-        max_attempts = 50
+        max_attempts = 1000
         for _ in range(max_attempts):
             if platform:
                 x = random.randint(50, self.width - width - 50)
@@ -556,6 +696,7 @@ class Level(ABC):
         """Отрисовка уровня"""
         # Фон
         surface.blit(background_sprite, (0, 0))
+        print(f"Фон: {background_sprite.get_size()} at (0, 0)")
 
         # Отрисовка объектов
         for platform in self.platforms:
@@ -660,16 +801,17 @@ class Level1(Level):
         self.exit_checked = False
         self.used_x_positions = []  # Для хранения занятых позиций по X
 
-    def get_valid_x_position(self, width: int, min_distance: int = 500) -> int:
+    def get_valid_x_position(self, width: int, min_distance: int = 300) -> int:  # Увеличено с 50 до 300
         """Генерирует X-позицию с минимальным расстоянием от других объектов"""
         max_attempts = 20
         for _ in range(max_attempts):
             x = random.randint(50, self.width - width - 50)
 
-            # Проверяем расстояние до всех занятых позиций
             if all(abs(x - used_x) >= min_distance for used_x in self.used_x_positions):
                 self.used_x_positions.append(x)
                 return x
+
+        return random.randint(50, self.width - width - 50)
 
         # Если не удалось найти позицию, возвращаем случайную
         return random.randint(50, self.width - width - 50)
@@ -696,33 +838,82 @@ class Level1(Level):
         self.platforms = [Platform(pos, LEVEL_WIDTH) for pos in platform_positions]
         lower, middle, upper = self.platforms
 
+        # Разбиваем уровень на 3 вертикальные зоны
+        zone_width = self.width // 3
+        zones = [
+            (0, zone_width),
+            (zone_width, zone_width * 2),
+            (zone_width * 2, self.width)
+        ]
+
+        # Распределяем объекты по зонам
+        for platform in self.platforms:
+            zone = random.choice(zones)
+            x = random.randint(zone[0] + 100, zone[1] - 100)
+
+
         # Генерация HoleWithLift для среднего и верхнего уровня
         for platform in [middle, upper]:
-            for _ in range(3):
-                hole_x = self.get_valid_x_position(MIN_DISTANCE)
+            for _ in range(2):
+                x = self.get_valid_x_position(1000)
                 hole = HoleWithLift(
                     platform=platform,
                     width=120,
-                    position_x=hole_x,
+                    position_x=x,
                     lift_height=40
                 )
                 platform.holes.append(hole)
                 self.obstacles.append(hole.lift)
 
-        # Генерация шипов на платформах
+        for platform in [lower]:
+            for _ in range(2):
+                x = self.get_valid_x_position(1000)
+                hole = Hole(
+                    platform=platform,
+                    width=120,
+                    position_x=x,
+                )
+                platform.holes.append(hole)
+
+
+
         # Для КАЖДОЙ платформы (нижняя, средняя, верхняя) добавляем:
+        # Генерация шипов на платформах
         for platform in [lower, middle, upper]:
-            for _ in range(3):
-                x = self.get_valid_x_position(MIN_DISTANCE)
+            for _ in range(2):
+                x = self.get_valid_x_position(1000)
                 y = platform.rect.y - random.randint(50, 150)
                 self.obstacles.append(Spike((x, platform.rect.y - 16), True))
 
         # Генерация бонусов (монет)
         for platform in self.platforms:
             for _ in range(20):
-                x = self.get_valid_x_position(50)
+                x = self.get_valid_x_position(550)
                 y = platform.rect.y - random.randint(50, 150)
                 self.bonuses.append(Coin((x, y)))
+
+            # Генерация дисковых пил (CircularSaw)
+            for _ in range(2):  # 2 пилы на уровне
+                x = self.get_valid_x_position(1000)
+                y = random.choice([middle.rect.y - 150, upper.rect.y - 200])
+                move_range = random.randint(80, 150)
+                self.obstacles.append(CircularSaw((x, y), move_range))
+
+            # Генерация вертикальных стен
+            for _ in range(1):
+                x = self.get_valid_x_position(1000)
+                height = random.randint(100, 200)
+                self.obstacles.append(
+                    StaticVerticalPlatform((x, middle.rect.y - height), height)
+                )
+
+                # Горизонтальные платформы
+            for _ in range(2):
+                x = self.get_valid_x_position(1000)
+                height = random.randint(100, 200)
+                self.obstacles.append(
+                    StaticHorizontalPlatform((x, middle.rect.y - height), height)
+                )
 
         # Генерация артефакта
         artifact_x = self.get_valid_x_position(40)
@@ -731,20 +922,6 @@ class Level1(Level):
             middle.rect.y - 50
         )))
 
-        # Генерация дисковых пил (CircularSaw)
-        for _ in range(4):  # 3 пилы на уровне
-            x = self.get_valid_x_position(MIN_DISTANCE)
-            y = random.choice([middle.rect.y - 150, upper.rect.y - 200])
-            move_range = random.randint(80, 150)
-            self.obstacles.append(CircularSaw((x, y), move_range))
-
-        # Генерация вертикальных стен
-        for _ in range(2):
-            x = self.get_valid_x_position(MIN_DISTANCE)
-            height = random.randint(100, 200)
-            self.obstacles.append(
-                StaticVerticalPlatform((x, middle.rect.y - height), height)
-            )
 
         # Стартовый портал на нижней платформе
         start_x = random.randint(lower.rect.left + 100, lower.rect.right - 150)
@@ -757,13 +934,6 @@ class Level1(Level):
 
         self.portals.extend([start_portal, finish_portal])
 
-        # # Горизонтальные платформы
-        for _ in range(2):
-            x = self.get_valid_x_position(100)
-            height = random.randint(100, 200)
-            self.obstacles.append(
-                StaticHorizontalPlatform((x, middle.rect.y - height), height)
-            )
 
 class Level2(Level1):
     """Второй уровень игры (требуется 2 артефакта)"""
@@ -782,7 +952,7 @@ class Level2(Level1):
             self.platforms[1].rect.y - 150  # Размещаем на другой высоте
         )))
         # Добавляем дополнительные пилы
-        for _ in range(2):
+        for _ in range(1):
             x = self.get_valid_x_position(50)
             y = random.choice([self.platforms[0].rect.y - 180, self.platforms[2].rect.y - 250])
             self.obstacles.append(CircularSaw((x, y), random.randint(100, 180)))
@@ -811,7 +981,7 @@ class Level3(Level2):
         )))
 
         # Еще больше пил с увеличенным диапазоном движения
-        for _ in range(3):
+        for _ in range(1):
             x = self.get_valid_x_position(50)
             y = random.choice([p.rect.y - random.randint(150, 300) for p in self.platforms])
             self.obstacles.append(CircularSaw((x, y), random.randint(150, 250)))
@@ -834,10 +1004,10 @@ class DebugLevel(Level):
         self.height = SCREEN_HEIGHT
         self.artifacts_required = 1
 
-        platform_width = 600
+        platform_width = 2000
         platform_positions = [
-            (100, SCREEN_HEIGHT - 150),
-            (100, SCREEN_HEIGHT - 350)
+            (0, SCREEN_HEIGHT - 75),
+            (0, SCREEN_HEIGHT - 350)
         ]
 
         self.platforms = [Platform(pos, platform_width) for pos in platform_positions]
@@ -854,13 +1024,15 @@ class DebugLevel(Level):
             self.obstacles.append(hole.lift)
 
         # Остальные объекты...
-        self.obstacles.append(Spike((150, lower_platform.rect.y - 16), True))
+        self.obstacles.append(Spike((500, lower_platform.rect.y - 16), True))
         self.bonuses.extend([Coin((400, SCREEN_HEIGHT - 200)) for _ in range(3)])
         self.artifacts.append(Artifact((550, SCREEN_HEIGHT - 200)))
-        self.obstacles.append(CircularSaw((650, SCREEN_HEIGHT - 250), 80))
+        self.obstacles.append(CircularSaw((950, SCREEN_HEIGHT - 250), 80))
         self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
-        self.portals.append(Portal((700, SCREEN_HEIGHT - 400), True))
-        self.portals.append(Portal((120, SCREEN_HEIGHT - 250), False))
+
+        print("Пытаюсь загрузить:", "portal_entry.png")  # Добавьте эту строку перед загрузкой
+        self.portals.append(Portal((700, SCREEN_HEIGHT - 175), True))
+        self.portals.append(Portal((120, SCREEN_HEIGHT - 175), False))
 
 
 class LevelManager:
