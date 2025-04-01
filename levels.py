@@ -1135,10 +1135,10 @@ class LevelManager:
         return level_class(level_num)
 
     def set_debug_level(self):
-        """Переключает на отладочный уровень"""
+        """Переключает на отладочный уровень, сохраняя состояние"""
         self.current_level_num = 0
         self.current_level = self.create_level(0)
-        self.game_over = False
+        self.game_over = Falseц
 
     def reset(self, debug_mode=False):
         """Сбрасывает менеджер уровней"""
