@@ -102,7 +102,7 @@ coin_animation_frames = load_coin_frames()
 
 
 # Загружаем оригинальный фон
-original_bg = load_sprite("level_1.png", (20, 30, 15))
+original_bg = load_sprite("level_1.pn", (20, 30, 15))
 
 # Создаем склеенный фон (2x ширины)
 bg_width, bg_height = original_bg.get_size()
@@ -119,14 +119,24 @@ original_pf = load_sprite("tile_1.png", (100, 100, 100))  # Исходный с�
 pf_width, pf_height = original_pf.get_size()
 platform_sprite = original_pf  # Используем оригинальный размер спрайта
 
+# Загружаем оригинальный спрайт вертикальной платформы
+original_vpf = load_sprite("tile_10.png", (100, 100, 100))  # Исходный спрайт
+vpf_width, vpf_height = original_vpf.get_size()
+vertical_platform_sprite = original_vpf  # Используем оригинальный размер спрайта
+
+# Загружаем оригинальный спрайт горизонтальной платформы
+original_gpf = load_sprite("tile_10.png", (100, 100, 100))  # Исходный спрайт
+vpf_width, gpf_height = original_gpf.get_size()
+vertical_platform_sprite = original_gpf  # Используем оригинальный размер спрайта
+
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
 spike_sprite = load_sprite("spike.png", (139, 0, 0))
 moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
 portal_sprite = load_sprite("door.png", (0, 255, 0))
-vertical_platform_sprite = load_sprite("vertical_platform.png", (120, 120, 120))
-horizontal_platform_sprite = load_sprite("platform.png", (120, 120, 120))
+vertical_platform_sprite = load_sprite("tile_10.png", (120, 120, 120))
+horizontal_platform_sprite = load_sprite("tile_1.png", (120, 120, 120))
 
 
 # Загрузка кадров анимации монеты
@@ -386,16 +396,36 @@ class StaticVerticalPlatform(Obstacle):
         :param height: Высота платформы
         """
         super().__init__(position, (30, 100), ObjectType.PLATFORM)
-        self.sprite = vertical_platform_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (30, 100))
+        # Оригинальный спрайт без масштабирования
+        self.original_sprite = vertical_platform_sprite
+        self.tile_height = self.original_sprite.get_height()  # Высота одного тайла
 
     def update(self):
         """Обновление состояния (пустое, так как платформа статична)"""
         pass
 
     def draw(self, surface: pygame.Surface):
-        """Отрисовка платформы"""
-        surface.blit(self.sprite, self.rect)
+        """Отрисовка с повторением текстуры по вертикали"""
+        # Сколько целых тайлов помещается
+        full_tiles = self.rect.height // self.tile_height
+        # Остаток (последний неполный тайл)
+        remainder = self.rect.height % self.tile_height
+
+        # Рисуем целые тайлы
+        for i in range(full_tiles):
+            surface.blit(self.original_sprite,
+                         (self.rect.x,
+                          self.rect.y + i * self.tile_height))
+
+        # Рисуем остаток (если есть)
+        if remainder > 0:
+            # Вырезаем нужную часть из спрайта
+            partial_tile = pygame.Surface((self.rect.width, remainder), pygame.SRCALPHA)
+            partial_tile.blit(self.original_sprite, (0, 0),
+                              (0, 0, self.rect.width, remainder))
+            surface.blit(partial_tile,
+                         (self.rect.x,
+                          self.rect.y + full_tiles * self.tile_height))
 
 
 class StaticHorizontalPlatform(Obstacle):
@@ -409,16 +439,38 @@ class StaticHorizontalPlatform(Obstacle):
         :param width: Ширина платформы
         """
         super().__init__(position, (width, 20), ObjectType.PLATFORM)
-        self.sprite = horizontal_platform_sprite
-        self.sprite = pygame.transform.scale(self.sprite, (width, 20))
+        # Оригинальный спрайт без масштабирования
+        self.original_sprite = horizontal_platform_sprite
+        self.tile_height = self.original_sprite.get_height()  # Высота одного тайла
 
     def update(self):
         """Обновление состояния (пустое, так как платформа статична)"""
         pass
 
     def draw(self, surface: pygame.Surface):
-        """Отрисовка платформы"""
-        surface.blit(self.sprite, self.rect)
+        """Отрисовка с повторением текстуры по горизонтали"""
+        # Получаем ширину одного тайла из спрайта
+        tile_width = self.original_sprite.get_width()
+        # Сколько целых тайлов помещается
+        full_tiles = self.rect.width // tile_width
+        # Остаток (последний неполный тайл)
+        remainder = self.rect.width % tile_width
+
+        # Рисуем целые тайлы
+        for i in range(full_tiles):
+            surface.blit(self.original_sprite,
+                    (self.rect.x + i * tile_width,  # X увеличивается вправо
+                     self.rect.y))                  # Y остается постоянным
+
+        # Рисуем остаток (если есть)
+        if remainder > 0:
+            # Вырезаем нужную часть из спрайта
+            partial_tile = pygame.Surface((self.rect.width, remainder), pygame.SRCALPHA)
+            partial_tile.blit(self.original_sprite, (0, 0),
+                              (0, 0, remainder, self.rect.height))
+            surface.blit(partial_tile,
+                         (self.rect.x + full_tiles * tile_width,  # Позиция остатка
+                          self.rect.y))
 
 
 class Spike(Obstacle):
