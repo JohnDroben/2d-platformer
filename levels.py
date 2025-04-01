@@ -1138,7 +1138,7 @@ class LevelManager:
         """Переключает на отладочный уровень, сохраняя состояние"""
         self.current_level_num = 0
         self.current_level = self.create_level(0)
-        self.game_over = Falseц
+        self.game_over = False
 
     def reset(self, debug_mode=False):
         """Сбрасывает менеджер уровней"""
