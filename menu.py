@@ -15,8 +15,8 @@ class Button:
         self.rect = pygame.Rect(position[0], position[1], size[0], size[1])
         self.text = text
         self.action = action
-        self.color = (100, 100, 100)  # Неактивный цвет
-        self.active_color = (200, 200, 200)  # Активный цвет
+        self.color = (51, 102, 51)  # Неактивный цвет
+        self.active_color = (204, 102, 0)  # Активный цвет
         self.is_active = False
         self.font = pygame.font.SysFont('Arial', 36)
 
@@ -37,10 +37,10 @@ class MainMenu:
     def __init__(self):
         self.background = load_sprite("menu_background.jpg", (20, 30, 15))
         self.buttons = [
-            Button((490, 300), "Начать игру", "start"),
-            Button((490, 400), "Отладочный уровень", "debug"),
-            Button((490, 500), "Разработчики", "credits"),
-            Button((490, 600), "Выход", "quit")
+            Button((100, 300), "Начать игру", "start"),
+            Button((100, 400), "Отладочный уровень", "debug"),
+            Button((100, 500), "Разработчики", "credits"),
+            Button((100, 600), "Выход", "quit")
         ]
         self.current_button_index = 0
         self.buttons[self.current_button_index].is_active = True
