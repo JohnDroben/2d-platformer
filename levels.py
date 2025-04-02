@@ -1067,7 +1067,7 @@ class DebugLevel(Level):
 
         # Добавляем HoleWithLift
         holes = [
-        #    HoleWithLift(lower_platform, 100, 250, 30),
+            HoleWithLift(lower_platform, 100, 200, 30),
 #            HoleWithLift(upper_platform, 100, 450, 30)
         ]
 
@@ -1076,11 +1076,11 @@ class DebugLevel(Level):
             self.obstacles.append(hole.lift)
 
         # Остальные объекты...
-        # self.obstacles.append(Spike((500, lower_platform.rect.y - 16), True))
-        # self.bonuses.extend([Coin((400, SCREEN_HEIGHT - 200)) for _ in range(3)])
-        # self.artifacts.append(Artifact((550, SCREEN_HEIGHT - 200)))
-        # self.obstacles.append(CircularSaw((950, SCREEN_HEIGHT - 250), 80))
-        # self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
+        self.obstacles.append(Spike((500, lower_platform.rect.y - 16), True))
+        self.bonuses.extend([Coin((400, SCREEN_HEIGHT - 200)) for _ in range(3)])
+        self.artifacts.append(Artifact((550, SCREEN_HEIGHT - 200)))
+        self.obstacles.append(CircularSaw((950, SCREEN_HEIGHT - 250), 80))
+        self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
 
         Logger().debug("Пытаюсь загрузить:portal_entry.png")  # Добавьте эту строку перед загрузкой
         self.portals.append(Portal((700, SCREEN_HEIGHT - 175), True))

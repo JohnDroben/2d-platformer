@@ -54,19 +54,86 @@ class Enemy(AnimatedCharacter):
       self.last_direction_change = 0
       self.portal_check_distance = 60
 
+
    def update_ai(self, game_objects: List):
-      """Обновление логики ИИ врага"""
-      current_time = time.time()
+         """Обновление логики ИИ с проверкой ям"""
+         current_time = time.time()
 
-      # Проверка необходимости разворота
-      if self.should_reverse_direction(game_objects, current_time):
-         self.reverse_direction(current_time)
+         if self.should_reverse_direction(game_objects, current_time):
+            self.reverse_direction(current_time)
 
-      # Движение с проверкой коллизий
-      self._move_with_collision_check(game_objects)
+         self._move_with_collision_check(game_objects)
+         self.handle_jump(current_time)
 
-      # Прыжки с рандомизацией
-      self.handle_jump(current_time)
+   def should_reverse_direction(self, game_objects: List, current_time: float) -> bool:
+      """Проверка необходимости разворота (включая ямы)"""
+      if current_time - self.last_direction_change < self.min_direction_change_interval:
+         return False
+
+      # Область сканирования перед врагом
+      scan_rect = self._get_scan_rect()
+
+      # Проверка на ямы и опасности
+      for obj in game_objects:
+         if scan_rect.colliderect(obj.rect):
+            if obj.object_type in {ObjectType.PIT, ObjectType.HOLE, ObjectType.SPIKE}:
+               return True
+            if obj.object_type.is_solid and obj != self:
+               return True
+
+      # Проверка наличия земли перед врагом
+      if not self._has_safe_ground_ahead(game_objects, scan_rect):
+         return True
+
+      return self.step_counter >= self.step_limit
+
+   def _get_scan_rect(self) -> pygame.Rect:
+      """Создает область сканирования перед врагом"""
+      direction = 1 if self.current_direction > 0 else -1
+      return pygame.Rect(
+         self.rect.x + direction * self.rect.width,
+         self.rect.y,
+         self.hole_check_distance * direction,
+         self.rect.height
+      )
+
+   def _has_safe_ground_ahead(self, game_objects: List, scan_rect: pygame.Rect) -> bool:
+      """Проверяет наличие безопасной поверхности перед врагом"""
+      ground_check = pygame.Rect(
+         scan_rect.x,
+         scan_rect.bottom + 1,
+         scan_rect.width,
+         5
+      )
+
+      for obj in game_objects:
+         if isinstance(obj, Platform) and ground_check.colliderect(obj.rect):
+            # Проверяем отсутствие ям на платформе
+            holes = getattr(obj, 'holes', [])
+            if not any(self.is_fully_inside_horizontally(ground_check, hole.rect) for hole in holes):
+               return True
+      return False
+
+   def _move_with_collision_check(self, game_objects: List):
+      """Движение с проверкой коллизий"""
+      self.rect.x += int(self.speed * self.current_direction)
+      self.step_counter += 1
+
+      # Проверка столкновений после движения
+      for obj in game_objects:
+         if self.rect.colliderect(obj.rect) and obj.object_type.is_solid and obj != self:
+            if self.current_direction > 0:
+               self.rect.right = obj.rect.left
+            else:
+               self.rect.left = obj.rect.right
+            self._force_reverse_direction()
+            break
+
+   def _force_reverse_direction(self):
+      """Немедленный разворот направления"""
+      self.current_direction *= -1
+      self.step_counter = 0
+      self.last_direction_change = time.time()
 
    def apply_physics(self, game_objects: List, screen_width: int, screen_height: int):
       """Полная реализация физики врага"""
@@ -84,22 +151,6 @@ class Enemy(AnimatedCharacter):
       # Обновление анимации
       self._update_animation_state()
 
-   def _move_with_collision_check(self, game_objects: List):
-      """Движение с проверкой горизонтальных коллизий"""
-      self.rect.x += int(self.speed * self.current_direction)
-      self.step_counter += 1
-
-      # Проверка столкновений после движения
-      for obj in game_objects:
-         if self.rect.colliderect(obj.rect):
-            if obj.object_type.is_solid and obj != self:
-               # Коррекция позиции при столкновении
-               if self.current_direction > 0:
-                  self.rect.right = obj.rect.left
-               else:
-                  self.rect.left = obj.rect.right
-               self._force_reverse_direction()
-               break
 
    def _handle_vertical_collisions(self, game_objects: List, screen_height: int):
       """Обработка вертикальных столкновений"""
@@ -156,49 +207,6 @@ class Enemy(AnimatedCharacter):
          elif self.velocity_y < 0:
             self.current_action = Action.JUMP
 
-   def _force_reverse_direction(self):
-      """Немедленный разворот направления"""
-      self.current_direction *= -1
-      self.step_counter = 0
-      self.last_direction_change = time.time()
-
-   def should_reverse_direction(self, game_objects: List, current_time: float) -> bool:
-      """Определяет необходимость разворота"""
-      if current_time - self.last_direction_change < self.min_direction_change_interval:
-         return False
-
-      # Создаем область сканирования перед врагом
-      scan_rect = pygame.Rect(
-         self.rect.x + self.current_direction * (self.rect.width + self.hole_check_distance),
-         self.rect.y,
-         self.hole_check_distance,
-         self.rect.height
-      )
-
-      # Проверка препятствий впереди
-      for obj in game_objects:
-         if scan_rect.colliderect(obj.rect):
-            if isinstance(obj, (Hole, HoleWithLift, Portal)) or obj.object_type.is_solid:
-               return True
-
-      # Проверка наличия земли под ногами
-      ground_check = pygame.Rect(
-         scan_rect.x,
-         scan_rect.bottom + 1,
-         scan_rect.width,
-         5
-      )
-
-      has_ground = any(
-         isinstance(obj, Platform) and
-         ground_check.colliderect(obj.rect) and
-         not any(
-            self.is_fully_inside_horizontally(ground_check, hole.rect)
-            for hole in getattr(obj, 'holes', [])
-         )
-         for obj in game_objects
-      )
-      return not has_ground or self.step_counter >= self.step_limit
 
    def reverse_direction(self, current_time: float):
       """Разворот направления с учетом времени"""
