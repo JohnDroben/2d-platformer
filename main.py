@@ -130,8 +130,6 @@ def main():
         if in_menu:
             menu.draw(screen)
         else:
-            # Оригинальная игровая логика
-
             # Управление
             keys = pygame.key.get_pressed()
 
