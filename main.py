@@ -1,9 +1,12 @@
 import pygame
 import sys
 from levels import LevelManager, LEVEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT
-from custom_logging import Logger
-from menu import MainMenu  # Добавлен новый импорт
 
+from custom_logging import Logger
+#Инициализация логгера
+Logger().initialize()
+
+from menu import MainMenu  # Добавлен новый импорт
 from Characters.action import Action
 from Characters.Hero.hero import Hero
 from Characters.type_object import ObjectType
@@ -12,8 +15,7 @@ from Characters.type_object import ObjectType
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("2D Platformer")
-#Инициализация логгера
-Logger().initialize()
+
 # Цвета
 WHITE = (255, 255, 255)
 BLUE = (0, 120, 255)
