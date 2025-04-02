@@ -56,13 +56,3 @@ class ObjectType(Enum):
             ObjectType.ARTIFACT,
    #         ObjectType.CHECKPOINT
         ]
-
-    @property
-    def is_platform(self):
-        """Определяет, является ли объект платформой любого типа"""
-        return self in {
-            ObjectType.PLATFORM,
-            ObjectType.MOVING_PLATFORM,
-            ObjectType.HOLE,
-            ObjectType.PIT
-        }

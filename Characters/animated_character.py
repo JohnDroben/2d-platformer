@@ -6,7 +6,7 @@ from Characters.character import  Character
 from Characters.animation2 import AnimatedObject
 from levels import GameObject
 from Characters.type_object import ObjectType
-
+from custom_logging import Logger
 
 class AnimatedCharacter(GameObject):
     """Класс, объединяющий Character и AnimatedObject через композицию"""

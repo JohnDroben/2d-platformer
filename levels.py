@@ -20,32 +20,7 @@ Position = Tuple[int, int]  # Позиция объекта (x, y)
 Size = Tuple[int, int]  # Размер объекта (ширина, высота)
 
 
-def check_assets():
-    required_files = [
-        "level_1.png",
-        "coin.png",
-        "coin_1.png",
-        "coin_2.png",
-        "coin_3.png",
-        "spike.png",
-        "mov_platform.png",
-        "saw.png",
-        "artifact.png",
-        "door.png",
-        "vertical_platform.png"
-    ]
 
-    missing = []
-    for file in required_files:
-        path = os.path.join("assets", "imgs", file)
-        if not os.path.exists(path):
-            missing.append(file)
-        print("⚠ файл загружен:")
-
-    if missing:
-        print("⚠ Отсутствуют файлы:", ", ".join(missing))
-        return False
-    return True
 
 
 def load_sprite(name: str, default_color: tuple) -> pygame.Surface:
@@ -56,16 +31,16 @@ def load_sprite(name: str, default_color: tuple) -> pygame.Surface:
             pygame.display.set_mode((1, 1))  # Минимальный дисплей
 
         path = os.path.join("assets", "imgs", name)
-        print(f"Пытаюсь загрузить {path}, существует? {os.path.exists(path)}")
+        Logger().debug(f"Пытаюсь загрузить {path}, существует? {os.path.exists(path)}")
         if not os.path.exists(path):
             raise FileNotFoundError(f"Файл {path} не найден")
 
         sprite = pygame.image.load(path)
-        print(f"✅ Успешно загружен {name}, размер {sprite.get_size()}")
+        Logger().debug(f"✅ Успешно загружен {name}, размер {sprite.get_size()}")
         return sprite.convert_alpha() if pygame.display.get_init() else sprite
 
     except Exception as e:
-        print(f"Ошибка загрузки {name}: {e}")
+        Logger().debug(f"Ошибка загрузки {name}: {e}")
         size = (SCREEN_WIDTH, SCREEN_HEIGHT) if name == "level_1.png" else (32, 32)
         stub = pygame.Surface(size)
         stub.fill(default_color)
@@ -84,12 +59,12 @@ def load_coin_frames():
             if base_size is None:
                 base_size = frame.get_size()
             elif frame.get_size() != base_size:
-                print(f"Ошибка: coin_{i}.png имеет размер {frame.get_size()}, ожидалось {base_size}")
+                Logger().debug(f"Ошибка: coin_{i}.png имеет размер {frame.get_size()}, ожидалось {base_size}")
                 frame = pygame.transform.scale(frame, base_size)
 
             frames.append(frame)
         except Exception as e:
-            print(f"Ошибка загрузки coin_{i}.png: {e}")
+            Logger().debug(f"Ошибка загрузки coin_{i}.png: {e}")
             # Создаем заглушку
             stub = pygame.Surface(base_size or (32, 32), pygame.SRCALPHA)
             stub.fill((255, 215, 0))  # Золотой цвет
@@ -102,14 +77,14 @@ coin_animation_frames = load_coin_frames()
 
 
 # Загружаем оригинальный фон
-original_bg = load_sprite("level_1.pn", (20, 30, 15))
+original_bg = load_sprite("fon_2.jpg", (20, 30, 15))
 
 # Создаем склеенный фон (2x ширины)
 bg_width, bg_height = original_bg.get_size()
-stitched_bg = pygame.Surface((bg_width * 5, bg_height))
+stitched_bg = pygame.Surface((bg_width * 7, bg_height))
 stitched_bg.blit(original_bg, (0, 0))
 stitched_bg.blit(original_bg, (bg_width, 0))
-for i in range(5):
+for i in range(7):
     stitched_bg.blit(original_bg, (bg_width * i, 0))
 
 background_sprite = stitched_bg
@@ -130,7 +105,7 @@ vpf_width, gpf_height = original_gpf.get_size()
 vertical_platform_sprite = original_gpf  # Используем оригинальный размер спрайта
 
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
-spike_sprite = load_sprite("spike.png", (139, 0, 0))
+spike_sprite = load_sprite("spike_3.png", (139, 0, 0))
 moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
@@ -603,13 +578,13 @@ class Portal(GameObject):
         try:
             self.sprite = pygame.image.load("assets/imgs/door.png").convert_alpha()
             self.sprite = pygame.transform.scale(self.sprite, (50, 100))
-            print(f"Портал: изображение успешно загружено, размер {self.sprite.get_size()}")
+            Logger().debug(f"Портал: изображение успешно загружено, размер {self.sprite.get_size()}")
         except Exception as e:
-            print(f"Ошибка загрузки изображения портала: {e}")
+            Logger().debug(f"Ошибка загрузки изображения портала: {e}")
             # Создаем заглушку
             self.sprite = pygame.Surface((50, 100), pygame.SRCALPHA)
             self.sprite.fill((0, 255, 0) if is_exit else (255, 0, 0))
-            print("Создана заглушка для портала")
+            Logger().debug("Создана заглушка для портала")
 
     def disappear_after(self, milliseconds: int):
         """Устанавливает таймер исчезновения портала"""
@@ -625,13 +600,13 @@ class Portal(GameObject):
 
     def draw(self, surface: pygame.Surface):
         """Отрисовка портала"""
-        print(f"Отрисовка портала: pos={self.rect.topleft}, видимый={self.disappear_alpha > 0}")
+        Logger().debug(f"Отрисовка портала: pos={self.rect.topleft}, видимый={self.disappear_alpha > 0}")
         if self.visible:
             if self.sprite:
-                print(f"✅ sprite существует, размер: {self.sprite.get_size()}")
+                Logger().debug(f"✅ sprite существует, размер: {self.sprite.get_size()}")
                 surface.blit(self.sprite, self.rect)  # <-- Здесь рисуем
             else:
-                print("❌ Ошибка: sprite = None, рисуем заглушку")
+                Logger().debug("❌ Ошибка: sprite = None, рисуем заглушку")
                 s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
                 pygame.draw.rect(s, (*self.color, self.disappear_alpha), (0, 0, self.rect.width, self.rect.height))
                 surface.blit(s, self.rect)
@@ -648,7 +623,7 @@ class Level(ABC):
 
             # Теперь безопасно загружаем спрайты
         self.background = load_sprite("level_1.png", (20, 30, 15))
-        print(f"Размер фона: {self.background.get_size()}")  # Должно быть (1280, 960)
+        Logger().debug(f"Размер фона: {self.background.get_size()}")  # Должно быть (1280, 960)
 
         """
         Инициализация уровня.
@@ -757,7 +732,7 @@ class Level(ABC):
         """Отрисовка уровня"""
         # Фон
         surface.blit(background_sprite, (0, 0))
-        print(f"Фон: {background_sprite.get_size()} at (0, 0)")
+        Logger().debug(f"Фон: {background_sprite.get_size()} at (0, 0)")
 
         # Отрисовка объектов
         for platform in self.platforms:
@@ -1092,8 +1067,8 @@ class DebugLevel(Level):
 
         # Добавляем HoleWithLift
         holes = [
-            HoleWithLift(lower_platform, 100, 250, 30),
-            HoleWithLift(upper_platform, 100, 450, 30)
+        #    HoleWithLift(lower_platform, 100, 250, 30),
+#            HoleWithLift(upper_platform, 100, 450, 30)
         ]
 
         for hole in holes:
@@ -1101,13 +1076,13 @@ class DebugLevel(Level):
             self.obstacles.append(hole.lift)
 
         # Остальные объекты...
-        self.obstacles.append(Spike((500, lower_platform.rect.y - 16), True))
-        self.bonuses.extend([Coin((400, SCREEN_HEIGHT - 200)) for _ in range(3)])
-        self.artifacts.append(Artifact((550, SCREEN_HEIGHT - 200)))
-        self.obstacles.append(CircularSaw((950, SCREEN_HEIGHT - 250), 80))
-        self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
+        # self.obstacles.append(Spike((500, lower_platform.rect.y - 16), True))
+        # self.bonuses.extend([Coin((400, SCREEN_HEIGHT - 200)) for _ in range(3)])
+        # self.artifacts.append(Artifact((550, SCREEN_HEIGHT - 200)))
+        # self.obstacles.append(CircularSaw((950, SCREEN_HEIGHT - 250), 80))
+        # self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
 
-        print("Пытаюсь загрузить:", "portal_entry.png")  # Добавьте эту строку перед загрузкой
+        Logger().debug("Пытаюсь загрузить:portal_entry.png")  # Добавьте эту строку перед загрузкой
         self.portals.append(Portal((700, SCREEN_HEIGHT - 175), True))
         self.portals.append(Portal((120, SCREEN_HEIGHT - 175), False))
 
