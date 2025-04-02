@@ -919,15 +919,14 @@ class Level1(Level):
         for platform in [middle, upper]:
             available_zones = [z for z in zones if z not in used_zones[platform]]
             if available_zones:
-                for _ in range(2):
-                    zone = random.choice(available_zones)
-                    x = random.randint(zone[0] + 150, zone[1] - 270)  # 270 = 120 (ширина) + 150 (отступ)
-                    hole = HoleWithLift(
-                        platform=platform,
-                        width=120,
-                        position_x=x,
-                        lift_height=40
-                    )
+                zone = random.choice(available_zones)
+                x = random.randint(zone[0] + 150, zone[1] - 270)  # 270 = 120 (ширина) + 150 (отступ)
+                hole = HoleWithLift(
+                    platform=platform,
+                    width=120,
+                    position_x=x,
+                    lift_height=40
+                )
                 platform.holes.append(hole)
                 self.obstacles.append(hole.lift)
                 used_zones[platform].append(zone)
@@ -984,7 +983,7 @@ class Level1(Level):
                 self.obstacles.append(
                     StaticVerticalPlatform((x, middle.rect.y - height), height)
                 )
-
+            
         # Генерация шипов на платформах (по одному в разных зонах)
         for platform in [lower, middle, upper]:
             available_zones = [z for z in zones if z not in used_zones[platform]]
