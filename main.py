@@ -14,7 +14,7 @@ from audio import SoundManager # класс управления звуками
 # Инициализация Pygame
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("2D Platformer")
+pygame.display.set_caption("NO EXIT")
 
 # Инициализация звуков
 sound_manager = SoundManager()
