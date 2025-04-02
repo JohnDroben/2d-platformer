@@ -34,9 +34,8 @@ class Hero(AnimatedCharacter):
             "IDLE": {"file_path": f"{path_to_assets}/player_stand.png", "frame_count": 1},
             "MOVE": {"file_path": f"{path_to_assets}/player_walk.png", "frame_count": 2},
             "JUMP": {"file_path": f"{path_to_assets}/player_jump.png", "frame_count": 1},
-            "FALL": {"file_path": f"{path_to_assets}/player_fall.png", "frame_count": 1},
             "SIT": {"file_path": f"{path_to_assets}/player_duck.png", "frame_count": 1, "sit_frames": True},
-            "SIT_MOVE": {"file_path": f"{path_to_assets}/player_duck_move.png", "frame_count": 2, "sit_frames": True},
+            "SIT_MOVE": {"file_path": f"{path_to_assets}/player_duck.png", "frame_count": 1, "sit_frames": True},
             "SIT_IDLE": {"file_path": f"{path_to_assets}/player_duck.png", "frame_count": 1, "sit_frames": True},
         }
 

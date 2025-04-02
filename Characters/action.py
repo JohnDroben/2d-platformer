@@ -8,7 +8,7 @@ class Action(Enum):
     SIT = auto()
     SIT_MOVE = auto()
     SIT_IDLE = auto()
-    FALL = auto()
+#    FALL = auto()
 #    ATTACK = auto()
 #    HURT = auto()
 #    DIE = auto()
