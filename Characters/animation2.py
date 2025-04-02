@@ -13,7 +13,7 @@ class AnimatedObject:
       self.frame = 0
       self.last_update = pygame.time.get_ticks()
       self.direction = 1
-      self.draw_hitbox = True  # Флаг для отключения хитбокса
+      self.draw_hitbox = False  # Флаг для отключения хитбокса
       self.sound_played_for_frame = {}  # Для отслеживания воспроизведенных звуков
       self.sound_triggers = {  # Определяем, на каких кадрах какие звуки играть
          Action.JUMP: {0: Action.JUMP},
