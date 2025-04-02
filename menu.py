@@ -72,9 +72,9 @@ class MainMenu:
         surface.blit(self.background, (0, 0))
 
         # Заголовок
-        title_font = pygame.font.SysFont('Arial', 72)
-        title = title_font.render("2D ПЛАТФОРМЕР", True, (255, 255, 255))
-        surface.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 150))
+        #title_font = pygame.font.SysFont('Arial', 72)
+        #title = title_font.render("2D ПЛАТФОРМЕР", True, (255, 255, 255))
+        #surface.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 150))
 
         # Кнопки
         for button in self.buttons:
