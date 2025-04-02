@@ -31,16 +31,16 @@ def load_sprite(name: str, default_color: tuple) -> pygame.Surface:
             pygame.display.set_mode((1, 1))  # Минимальный дисплей
 
         path = os.path.join("assets", "imgs", name)
-        print(f"Пытаюсь загрузить {path}, существует? {os.path.exists(path)}")
+        Logger().debug(f"Пытаюсь загрузить {path}, существует? {os.path.exists(path)}")
         if not os.path.exists(path):
             raise FileNotFoundError(f"Файл {path} не найден")
 
         sprite = pygame.image.load(path)
-        print(f"✅ Успешно загружен {name}, размер {sprite.get_size()}")
+        Logger().debug(f"✅ Успешно загружен {name}, размер {sprite.get_size()}")
         return sprite.convert_alpha() if pygame.display.get_init() else sprite
 
     except Exception as e:
-        print(f"Ошибка загрузки {name}: {e}")
+        Logger().debug(f"Ошибка загрузки {name}: {e}")
         size = (SCREEN_WIDTH, SCREEN_HEIGHT) if name == "level_1.png" else (32, 32)
         stub = pygame.Surface(size)
         stub.fill(default_color)
@@ -59,12 +59,12 @@ def load_coin_frames():
             if base_size is None:
                 base_size = frame.get_size()
             elif frame.get_size() != base_size:
-                print(f"Ошибка: coin_{i}.png имеет размер {frame.get_size()}, ожидалось {base_size}")
+                Logger().debug(f"Ошибка: coin_{i}.png имеет размер {frame.get_size()}, ожидалось {base_size}")
                 frame = pygame.transform.scale(frame, base_size)
 
             frames.append(frame)
         except Exception as e:
-            print(f"Ошибка загрузки coin_{i}.png: {e}")
+            Logger().debug(f"Ошибка загрузки coin_{i}.png: {e}")
             # Создаем заглушку
             stub = pygame.Surface(base_size or (32, 32), pygame.SRCALPHA)
             stub.fill((255, 215, 0))  # Золотой цвет
@@ -105,7 +105,7 @@ vpf_width, gpf_height = original_gpf.get_size()
 vertical_platform_sprite = original_gpf  # Используем оригинальный размер спрайта
 
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
-spike_sprite = load_sprite("spike.png", (139, 0, 0))
+spike_sprite = load_sprite("spike_3.png", (139, 0, 0))
 moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
@@ -578,13 +578,13 @@ class Portal(GameObject):
         try:
             self.sprite = pygame.image.load("assets/imgs/door.png").convert_alpha()
             self.sprite = pygame.transform.scale(self.sprite, (50, 100))
-            print(f"Портал: изображение успешно загружено, размер {self.sprite.get_size()}")
+            Logger().debug(f"Портал: изображение успешно загружено, размер {self.sprite.get_size()}")
         except Exception as e:
-            print(f"Ошибка загрузки изображения портала: {e}")
+            Logger().debug(f"Ошибка загрузки изображения портала: {e}")
             # Создаем заглушку
             self.sprite = pygame.Surface((50, 100), pygame.SRCALPHA)
             self.sprite.fill((0, 255, 0) if is_exit else (255, 0, 0))
-            print("Создана заглушка для портала")
+            Logger().debug("Создана заглушка для портала")
 
     def disappear_after(self, milliseconds: int):
         """Устанавливает таймер исчезновения портала"""
@@ -600,13 +600,13 @@ class Portal(GameObject):
 
     def draw(self, surface: pygame.Surface):
         """Отрисовка портала"""
-        print(f"Отрисовка портала: pos={self.rect.topleft}, видимый={self.disappear_alpha > 0}")
+        Logger().debug(f"Отрисовка портала: pos={self.rect.topleft}, видимый={self.disappear_alpha > 0}")
         if self.visible:
             if self.sprite:
-                print(f"✅ sprite существует, размер: {self.sprite.get_size()}")
+                Logger().debug(f"✅ sprite существует, размер: {self.sprite.get_size()}")
                 surface.blit(self.sprite, self.rect)  # <-- Здесь рисуем
             else:
-                print("❌ Ошибка: sprite = None, рисуем заглушку")
+                Logger().debug("❌ Ошибка: sprite = None, рисуем заглушку")
                 s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
                 pygame.draw.rect(s, (*self.color, self.disappear_alpha), (0, 0, self.rect.width, self.rect.height))
                 surface.blit(s, self.rect)
@@ -623,7 +623,7 @@ class Level(ABC):
 
             # Теперь безопасно загружаем спрайты
         self.background = load_sprite("level_1.png", (20, 30, 15))
-        print(f"Размер фона: {self.background.get_size()}")  # Должно быть (1280, 960)
+        Logger().debug(f"Размер фона: {self.background.get_size()}")  # Должно быть (1280, 960)
 
         """
         Инициализация уровня.
@@ -732,7 +732,7 @@ class Level(ABC):
         """Отрисовка уровня"""
         # Фон
         surface.blit(background_sprite, (0, 0))
-        print(f"Фон: {background_sprite.get_size()} at (0, 0)")
+        Logger().debug(f"Фон: {background_sprite.get_size()} at (0, 0)")
 
         # Отрисовка объектов
         for platform in self.platforms:
@@ -1082,7 +1082,7 @@ class DebugLevel(Level):
         self.obstacles.append(CircularSaw((950, SCREEN_HEIGHT - 250), 80))
         self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
 
-        print("Пытаюсь загрузить:", "portal_entry.png")  # Добавьте эту строку перед загрузкой
+        Logger().debug("Пытаюсь загрузить:portal_entry.png")  # Добавьте эту строку перед загрузкой
         self.portals.append(Portal((700, SCREEN_HEIGHT - 175), True))
         self.portals.append(Portal((120, SCREEN_HEIGHT - 175), False))
 
