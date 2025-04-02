@@ -77,15 +77,21 @@ coin_animation_frames = load_coin_frames()
 
 
 # Загружаем оригинальный фон
-original_bg = load_sprite("fon_2.jpg", (20, 30, 15))
+original_bg = load_sprite("fon_1.jpg", (20, 30, 15))
 
-# Создаем склеенный фон (2x ширины)
+# Создаем склеенный фон (7x ширины с чередованием оригинальной и отраженной картинки)
 bg_width, bg_height = original_bg.get_size()
 stitched_bg = pygame.Surface((bg_width * 7, bg_height))
-stitched_bg.blit(original_bg, (0, 0))
-stitched_bg.blit(original_bg, (bg_width, 0))
+
+# Флаг для чередования оригинальной и отраженной картинки
 for i in range(7):
-    stitched_bg.blit(original_bg, (bg_width * i, 0))
+    if i % 2 == 0:
+        # Оригинальная картинка
+        stitched_bg.blit(original_bg, (i * bg_width, 0))
+    else:
+        # Отраженная по горизонтали картинка
+        flipped_bg = pygame.transform.flip(original_bg, True, False)
+        stitched_bg.blit(flipped_bg, (i * bg_width, 0))
 
 background_sprite = stitched_bg
 
