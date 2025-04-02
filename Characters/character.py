@@ -16,7 +16,6 @@ class Character:
       self.original_height = height
       self.velocity_y = 0
       self.on_ground = True
-      self.on_lift = False
       self.is_sitting = False  # Добавляем флаг приседания
       self.sit_height = height // 2
       self.gravity = gravity
@@ -110,23 +109,12 @@ class Character:
       """
       return rect2.left <= rect1.left and rect1.right <= rect2.right
 
-   def is_centr_inside_horizontally(self, rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
-      """
-      Проверяет, находится ли цента rect1 внутри rect2 по горизонтали.
-
-      :param rect1: Хитбокс первого объекта
-      :param rect2: Хитбокс второго объекта
-      :return: True, если rect1 полностью внутри rect2 по горизонтали, иначе False
-      """
-      return rect2.left <= rect1.center[0] <= rect2.right
-
    def apply_physics(self, game_objects, screen_width, screen_height):
       # Гравитация и вертикальное движение
       prev_rect = self.rect.copy()  # Запоминаем позицию до движения
       self.velocity_y += self.gravity
       self.rect.y += self.velocity_y
       self.on_ground = False
-      self.on_lift = False
       # Ограничение по горизонтали
       if self.rect.left < 0:
          self.rect.left = 0
@@ -147,7 +135,7 @@ class Character:
                in_hole = False
                holes = getattr(platform, 'holes', [])  #берём люки с платформы если они есть.
                for hole in holes:
-                  if self.is_centr_inside_horizontally(self.rect, hole.rect):
+                  if self.is_fully_inside_horizontally(self.rect, hole.rect):
                      in_hole = True
                      break
                if not prev_rect.colliderect(obj.rect) and not in_hole:
@@ -164,20 +152,19 @@ class Character:
             if obj.object_type is ObjectType.MOVING_PLATFORM:
 
                mov_platform = cast(MovingPlatformVertical, obj)  # Явное приведение типа
-               if self.is_centr_inside_horizontally(self.rect, mov_platform.rect):
-                  if self.rect.bottom < mov_platform.rect.bottom:
-                     self.on_lift = True
+               on_platform = False
 
+               if self.is_fully_inside_horizontally(self.rect, mov_platform.rect):
+                  on_platform = True
 
-               if self.on_lift:
-                  self.on_ground = True
-                  self.velocity_y = mov_platform.speed * mov_platform.direction
+               if on_platform:
                   if self.velocity_y > 0:  # Падение вниз
                      self.rect.bottom = obj.rect.top
+                     self.velocity_y = 0
+                     self.on_ground = True
                      self.can_double_jump = False
-
                   elif self.velocity_y < 0:  # Движение вверх
-                     self.rect.bottom = mov_platform.rect.top
+                     #self.rect.top = obj.rect.bottom
                      #self.velocity_y = 0
                      pass
 
@@ -209,7 +196,7 @@ class Character:
                in_hole = False
                holes = getattr(platform, 'holes', [])  # берём люки с платформы если они есть.
                for hole in holes:
-                  if self.is_centr_inside_horizontally(prev_rect, hole.rect):
+                  if self.is_fully_inside_horizontally(prev_rect, hole.rect):
                      in_hole = True
                      if self.direction == 1:  # Вправо
                         if self.rect.right > hole.rect.right:
@@ -244,7 +231,7 @@ class Character:
          self.stand_up(game_objects)
       # Автоматический сброс анимации прыжка при приземлении
       if self.on_ground:
-         if self.current_action in (Action.JUMP, Action.FALL):
+         if self.current_action == Action.JUMP:
             # Возвращаем к анимации idle/move
             self.current_action = Action.IDLE if self.direction == 0 else Action.MOVE
       else:
@@ -252,7 +239,7 @@ class Character:
          FALL_THRESHOLD_VELOCITY =  5*self.gravity
          if self.velocity_y > FALL_THRESHOLD_VELOCITY:
             if self.current_action != Action.JUMP:
-               self.current_action = Action.FALL
+               self.current_action = Action.JUMP
 
       after_rect = self.rect
 

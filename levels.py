@@ -77,21 +77,15 @@ coin_animation_frames = load_coin_frames()
 
 
 # Загружаем оригинальный фон
-original_bg = load_sprite("fon_1.jpg", (20, 30, 15))
+original_bg = load_sprite("fon_2.jpg", (20, 30, 15))
 
-# Создаем склеенный фон (7x ширины с чередованием оригинальной и отраженной картинки)
+# Создаем склеенный фон (2x ширины)
 bg_width, bg_height = original_bg.get_size()
 stitched_bg = pygame.Surface((bg_width * 7, bg_height))
-
-# Флаг для чередования оригинальной и отраженной картинки
+stitched_bg.blit(original_bg, (0, 0))
+stitched_bg.blit(original_bg, (bg_width, 0))
 for i in range(7):
-    if i % 2 == 0:
-        # Оригинальная картинка
-        stitched_bg.blit(original_bg, (i * bg_width, 0))
-    else:
-        # Отраженная по горизонтали картинка
-        flipped_bg = pygame.transform.flip(original_bg, True, False)
-        stitched_bg.blit(flipped_bg, (i * bg_width, 0))
+    stitched_bg.blit(original_bg, (bg_width * i, 0))
 
 background_sprite = stitched_bg
 
@@ -111,7 +105,7 @@ vpf_width, gpf_height = original_gpf.get_size()
 vertical_platform_sprite = original_gpf  # Используем оригинальный размер спрайта
 
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
-spike_sprite = load_sprite("spike_1.png", (139, 0, 0))
+spike_sprite = load_sprite("spike_3.png", (139, 0, 0))
 moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
@@ -241,7 +235,7 @@ class Hole(GameObject):
         )
         self.platform = platform
         self.sprite = pygame.Surface((width, PLATFORM_HEIGHT))
-        self.sprite.fill((0, 5, 5))
+        self.sprite.fill((50, 50, 50))
 
     def update(self):
         """Реализация абстрактного метода - люк не требует обновления"""
@@ -455,36 +449,29 @@ class StaticHorizontalPlatform(Obstacle):
 
 
 class Spike(Obstacle):
-    def __init__(self, position: Position, is_floor_spike: bool = True, scale: float = 1.5):
+    def __init__(self, position: Position, is_floor_spike: bool = True):
         """
         :param position: Позиция шипов (x, y)
         :param is_floor_spike: True - шипы на полу (смотрят вверх), False - на стене (смотрят вправо)
         """
         # Размеры для разных ориентаций
-        # size = (32, 32)  # Базовый размер
-        base_size = 32
-        scaled_size = int(base_size * scale)
-        size = (scaled_size, scaled_size)
+        size = (32, 32)  # Базовый размер
+
         super().__init__(position, size, ObjectType.SPIKE)
 
         # Загружаем оригинальный спрайт
         original_sprite = spike_sprite
-        self.original_sprite = spike_sprite
-        self.scaled_sprite = pygame.transform.scale(
-            self.original_sprite,
-            (scaled_size, scaled_size)
-        )
 
         # Трансформируем спрайт в зависимости от ориентации
         if is_floor_spike:
             # Шипы на полу (нормальная ориентация)
-            self.sprite = pygame.transform.scale(original_sprite, (scaled_size, scaled_size))
+            self.sprite = pygame.transform.scale(original_sprite, (32, 32))
         else:
             # Шипы на стене (повернуты на 90 градусов)
-            self.scaled_sprite = pygame.transform.rotate(self.scaled_sprite, -90)
-
-            self.sprite = self.scaled_sprite
-            self.rect = self.sprite.get_rect(topleft=position)
+            self.sprite = pygame.transform.rotate(
+                pygame.transform.scale(original_sprite, (32, 32)),
+                -90  # Поворот против часовой стрелки
+            )
 
         # Хитбокс должен соответствовать спрайту
         self.rect = self.sprite.get_rect(topleft=position)
@@ -873,7 +860,6 @@ class Level1(Level):
         self.exit_checked = False
         self.used_x_positions = []
         self.used_positions = []
-        MIN_DISTANCE = 1000
 
         # Основные платформы
         platform_positions = [
@@ -894,51 +880,22 @@ class Level1(Level):
             middle: [],
             upper: []
         }
-        # Портал входа
-        start_zone = random.choice(zones)
-        zones.remove(start_zone)
-        start_x = random.randint(start_zone[0] + 100, start_zone[0] + 100)
-        start_portal = Portal((start_x, lower.rect.top - 100), False)
-        portal_zone_width = 200  # Ширина защищенной зоны вокруг портала
-        self.used_positions.append((
-            start_x - portal_zone_width // 2,
-            lower.rect.top - 100 - portal_zone_width // 2,
-            portal_zone_width,
-            portal_zone_width
-        ))
-
-        # Добавляем защитную зону вокруг портала
-        portal_protected_zone = (
-            start_x - MIN_DISTANCE,
-            lower.rect.top - 100 - MIN_DISTANCE,
-            MIN_DISTANCE * 2,
-            MIN_DISTANCE * 2
-        )
 
         # Генерация HoleWithLift для среднего и верхнего уровня (по одному в разных зонах)
         for platform in [middle, upper]:
             available_zones = [z for z in zones if z not in used_zones[platform]]
             if available_zones:
-                for _ in range(2):
-                    zone = random.choice(available_zones)
-                    x = random.randint(zone[0] + 150, zone[1] - 270)  # 270 = 120 (ширина) + 150 (отступ)
-                    hole = HoleWithLift(
-                        platform=platform,
-                        width=120,
-                        position_x=x,
-                        lift_height=40
-                    )
+                zone = random.choice(available_zones)
+                x = random.randint(zone[0] + 150, zone[1] - 270)  # 270 = 120 (ширина) + 150 (отступ)
+                hole = HoleWithLift(
+                    platform=platform,
+                    width=120,
+                    position_x=x,
+                    lift_height=40
+                )
                 platform.holes.append(hole)
                 self.obstacles.append(hole.lift)
                 used_zones[platform].append(zone)
-
-            # Добавляем защитную зону вокруг портала
-            portal_protected_zone = (
-                start_x - MIN_DISTANCE,
-                lower.rect.top - 100 - MIN_DISTANCE,
-                MIN_DISTANCE * 2,
-                MIN_DISTANCE * 2
-            )
 
         # Генерация Hole для нижнего уровня (в разных зонах)
         available_zones = [z for z in zones if z not in used_zones[lower]]
@@ -954,24 +911,26 @@ class Level1(Level):
                 )
                 lower.holes.append(hole)
 
-            # Добавляем защитную зону вокруг портала
-            portal_protected_zone = (
-                start_x - MIN_DISTANCE,
-                lower.rect.top - 100 - MIN_DISTANCE,
-                MIN_DISTANCE * 2,
-                MIN_DISTANCE * 2
-            )
+        # Генерация шипов на платформах (по одному в разных зонах)
+        for platform in [lower, middle, upper]:
+            available_zones = [z for z in zones if z not in used_zones[platform]]
+            if len(available_zones) >= 2:
+                for _ in range(4):
+                    zone = random.choice(available_zones)
+                    available_zones.remove(zone)
+                    x = random.randint(zone[0] + 50, zone[1] - 50)
+                    self.obstacles.append(Spike((x, platform.rect.y - 30), True))
 
-        # Генерация горизонтальных платформ (в разных зонах)
-        platform_zones = zones.copy()
-        for _ in range(2):
-            if platform_zones:
-                zone = random.choice(platform_zones)
-                platform_zones.remove(zone)
-                x = random.randint(zone[0] + 100, zone[1] - 200)
-                height = random.randint(100, 200)
-                self.obstacles.append(
-                    StaticHorizontalPlatform((x, middle.rect.y - height), 200)                    )
+        # Генерация дисковых пил (по одной на уровне в разных зонах)
+        saw_zones = zones.copy()
+        for _ in range(3):
+            if saw_zones:
+                zone = random.choice(saw_zones)
+                saw_zones.remove(zone)
+                x = random.randint(zone[0] + 100, zone[1] - 100)
+                y = random.choice([middle.rect.y - 150, upper.rect.y - 200])
+                move_range = random.randint(80, 150)
+                self.obstacles.append(CircularSaw((x, y), move_range))
 
         # Генерация вертикальных стен (в разных зонах)
         wall_zones = zones.copy()
@@ -985,35 +944,17 @@ class Level1(Level):
                     StaticVerticalPlatform((x, middle.rect.y - height), height)
                 )
 
-        # Генерация шипов на платформах (по одному в разных зонах)
-        for platform in [lower, middle, upper]:
-            available_zones = [z for z in zones if z not in used_zones[platform]]
-            if len(available_zones) >= 2:
-                for _ in range(2):
-                    zone = random.choice(available_zones)
-                    available_zones.remove(zone)
-                    x = random.randint(zone[0] + 50, zone[1] - 50)
-                    # Генерация с увеличенным размером (1.5x)
-                    self.obstacles.append(Spike(
-                        (x, platform.rect.y - 50),  # Позиция
-                        True,  # На полу
-                        scale=1.5  # Масштаб
-                    ))
-
-        # Генерация дисковых пил (по одной на уровне в разных зонах)
-        saw_zones = zones.copy()
-        for _ in range(3):
-            if saw_zones:
-                zone = random.choice(saw_zones)
-                saw_zones.remove(zone)
-                x = random.randint(zone[0] + 100, zone[1] - 100)
-                y = random.choice([middle.rect.y - 150, upper.rect.y - 200])
-                move_range = random.randint(80, 150)
-                self.obstacles.append(CircularSaw((x, y), move_range))
-
-
-
-
+        # Генерация горизонтальных платформ (в разных зонах)
+        platform_zones = zones.copy()
+        for _ in range(2):
+            if platform_zones:
+                zone = random.choice(platform_zones)
+                platform_zones.remove(zone)
+                x = random.randint(zone[0] + 100, zone[1] - 200)
+                height = random.randint(100, 200)
+                self.obstacles.append(
+                    StaticHorizontalPlatform((x, middle.rect.y - height), 200)
+                )
 
         # Генерация бонусов (монет) с равномерным распределением
         for platform in self.platforms:
@@ -1034,6 +975,9 @@ class Level1(Level):
         )))
 
         # Портал входа и выхода в разных зонах
+        start_zone = random.choice(zones)
+        start_x = random.randint(start_zone[0] + 100, start_zone[0] + 300)
+        start_portal = Portal((start_x, lower.rect.top - 100), False)
 
         exit_zone = random.choice([z for z in zones if z != start_zone])
         finish_x = random.randint(exit_zone[0] + 100, exit_zone[0] + 300)
@@ -1139,7 +1083,7 @@ class DebugLevel(Level):
         self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
 
         Logger().debug("Пытаюсь загрузить:portal_entry.png")  # Добавьте эту строку перед загрузкой
-        self.portals.append(Portal((1500, SCREEN_HEIGHT - 175), True))
+        self.portals.append(Portal((700, SCREEN_HEIGHT - 175), True))
         self.portals.append(Portal((120, SCREEN_HEIGHT - 175), False))
 
 
