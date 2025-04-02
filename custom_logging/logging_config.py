@@ -1,6 +1,6 @@
 # config.py
 class LoggingConfig:
-    LEVEL = "DEBUG"  # Уровни: DEBUG/INFO/WARNING/ERROR/CRITICAL
+    LEVEL = "CRITICAL"  # Уровни: DEBUG/INFO/WARNING/ERROR/CRITICAL
     LOG_TO_CONSOLE = True
     LOG_TO_FILE = False
     FILENAME = "debug.log"
