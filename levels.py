@@ -241,7 +241,7 @@ class Hole(GameObject):
         )
         self.platform = platform
         self.sprite = pygame.Surface((width, PLATFORM_HEIGHT))
-        self.sprite.fill((50, 50, 50))
+        self.sprite.fill((0, 5, 5))
 
     def update(self):
         """Реализация абстрактного метода - люк не требует обновления"""
@@ -1089,7 +1089,7 @@ class DebugLevel(Level):
         self.obstacles.append(StaticVerticalPlatform((700, lower_platform.rect.y - 200), 200))
 
         Logger().debug("Пытаюсь загрузить:portal_entry.png")  # Добавьте эту строку перед загрузкой
-        self.portals.append(Portal((700, SCREEN_HEIGHT - 175), True))
+        self.portals.append(Portal((1500, SCREEN_HEIGHT - 175), True))
         self.portals.append(Portal((120, SCREEN_HEIGHT - 175), False))
 
 
