@@ -7,7 +7,7 @@ Logger().initialize()
 
 from levels import LevelManager, LEVEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from menu import MainMenu  # Добавлен новый импорт
+from menu import MainMenu, FinalMenu  # Добавлен новый импорт
 from Characters.Hero.hero import Hero
 from audio import SoundManager # класс управления звуками
 
@@ -42,6 +42,7 @@ def wait_for_key_release(key):
 def main():
     # Инициализация меню
     menu = MainMenu()
+    final_menu = None
     in_menu = True
     debug_mode = False
 
@@ -91,6 +92,15 @@ def main():
                 elif action == "quit":
                     pygame.quit()
                     sys.exit()
+
+            elif action == "main_menu":
+                menu = MainMenu()  # Возвращаем основное меню
+                final_menu = None
+            elif action == "quit":
+                pygame.quit()
+                sys.exit()
+
+
             else:
                 # Оригинальная обработка событий игры
                 if event.type == pygame.KEYDOWN:
@@ -165,6 +175,11 @@ def main():
                     paused = True
                     wait_for_key_release(pygame.K_p)
 
+            if isinstance(menu, FinalMenu):  # Проверяем тип меню
+                menu.draw(screen)
+            else:
+                menu.draw(screen)
+
             if not level_manager.current_level.completed and not game_over and not paused:
 
                 # Обновление
@@ -209,8 +224,11 @@ def main():
                 camera_offset[0] = max(min(camera_offset[0], 0), SCREEN_WIDTH - LEVEL_WIDTH)
             elif level_manager.current_level.completed and not game_over:
                 if pygame.time.get_ticks() - level_manager.current_level.completion_time > 3000:
-                    if not level_manager.next_level():
-                        in_menu = True
+                    if not level_manager.next_level():  # Если это был последний уровень
+                        final_menu = FinalMenu()  # Создаем финальное меню
+                        menu = final_menu
+                        in_menu = True  # Переключаемся в режим меню
+                        game_over = False  # Сбрасываем флаг game_over
                     else:
                         start_portal = next((p for p in level_manager.current_level.portals if not p.is_finish), None)
                         start_pos = (start_portal.rect.x + 30, start_portal.rect.y - 50) if start_portal else (
@@ -294,6 +312,9 @@ def main():
                                              SCREEN_HEIGHT // 2 - 50))
                 screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2,
                                            SCREEN_HEIGHT // 2 + 50))
+
+        if in_menu:
+            menu.draw(screen)  # Будет отрисовываться либо MainMenu, либо FinalMenu
 
         pygame.display.flip()
         clock.tick(60)

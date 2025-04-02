@@ -111,7 +111,7 @@ vpf_width, gpf_height = original_gpf.get_size()
 vertical_platform_sprite = original_gpf  # Используем оригинальный размер спрайта
 
 # coin_sprite = load_sprite("coin.png", (255, 215, 0))
-spike_sprite = load_sprite("spike_3.png", (139, 0, 0))
+spike_sprite = load_sprite("spike_1.png", (139, 0, 0))
 moving_platform_sprite = load_sprite("moving_platform.png", (150, 75, 0))
 saw_sprite = load_sprite("saw.png", (200, 200, 200))
 artifact_sprite = load_sprite("artifact.png", (255, 215, 0))
@@ -455,29 +455,36 @@ class StaticHorizontalPlatform(Obstacle):
 
 
 class Spike(Obstacle):
-    def __init__(self, position: Position, is_floor_spike: bool = True):
+    def __init__(self, position: Position, is_floor_spike: bool = True, scale: float = 1.5):
         """
         :param position: Позиция шипов (x, y)
         :param is_floor_spike: True - шипы на полу (смотрят вверх), False - на стене (смотрят вправо)
         """
         # Размеры для разных ориентаций
-        size = (32, 32)  # Базовый размер
-
+        # size = (32, 32)  # Базовый размер
+        base_size = 32
+        scaled_size = int(base_size * scale)
+        size = (scaled_size, scaled_size)
         super().__init__(position, size, ObjectType.SPIKE)
 
         # Загружаем оригинальный спрайт
         original_sprite = spike_sprite
+        self.original_sprite = spike_sprite
+        self.scaled_sprite = pygame.transform.scale(
+            self.original_sprite,
+            (scaled_size, scaled_size)
+        )
 
         # Трансформируем спрайт в зависимости от ориентации
         if is_floor_spike:
             # Шипы на полу (нормальная ориентация)
-            self.sprite = pygame.transform.scale(original_sprite, (32, 32))
+            self.sprite = pygame.transform.scale(original_sprite, (scaled_size, scaled_size))
         else:
             # Шипы на стене (повернуты на 90 градусов)
-            self.sprite = pygame.transform.rotate(
-                pygame.transform.scale(original_sprite, (32, 32)),
-                -90  # Поворот против часовой стрелки
-            )
+            self.scaled_sprite = pygame.transform.rotate(self.scaled_sprite, -90)
+
+            self.sprite = self.scaled_sprite
+            self.rect = self.sprite.get_rect(topleft=position)
 
         # Хитбокс должен соответствовать спрайту
         self.rect = self.sprite.get_rect(topleft=position)
@@ -925,7 +932,12 @@ class Level1(Level):
                     zone = random.choice(available_zones)
                     available_zones.remove(zone)
                     x = random.randint(zone[0] + 50, zone[1] - 50)
-                    self.obstacles.append(Spike((x, platform.rect.y - 30), True))
+                    # Генерация с увеличенным размером (1.5x)
+                    self.obstacles.append(Spike(
+                        (x, platform.rect.y - 50),  # Позиция
+                        True,  # На полу
+                        scale=1.5  # Масштаб
+                    ))
 
         # Генерация дисковых пил (по одной на уровне в разных зонах)
         saw_zones = zones.copy()
