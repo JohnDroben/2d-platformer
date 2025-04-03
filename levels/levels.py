@@ -589,7 +589,7 @@ class Portal(GameObject):
         self.disappear_alpha = 255  # Полностью непрозрачный
 
         try:
-            self.sprite = pygame.image.load("assets/imgs/door.png").convert_alpha()
+            self.sprite = portal_sprite
             self.sprite = pygame.transform.scale(self.sprite, (50, 100))
             Logger().debug(f"Портал: изображение успешно загружено, размер {self.sprite.get_size()}")
         except Exception as e:
