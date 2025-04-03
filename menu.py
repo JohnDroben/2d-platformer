@@ -116,3 +116,38 @@ class MainMenu:
             text = self.credits_font.render(line, True, (255, 255, 255))
             surface.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, y_pos))
             y_pos += 40
+
+
+class FinalMenu(MainMenu):
+    """Финальное меню игры, появляется после прохождения всех уровней"""
+
+    def __init__(self):
+        super().__init__()  # Инициализация родительского класса
+        self.background = load_sprite("menu_background.jpg", (0, 0, 0))  # Загрузка специального фона
+        self.buttons = [
+            Button((SCREEN_WIDTH // 2 - 150, 400), "В Главное Меню", "main_menu"),
+            Button((SCREEN_WIDTH // 2 - 150, 500), "Выйти из игры", "quit")
+        ]
+        self.current_button_index = 0
+        self.buttons[self.current_button_index].is_active = True
+        self.congrats_font = pygame.font.SysFont('Arial', 48, bold=True)
+
+    def handle_event(self, event: pygame.event.Event) -> Optional[str]:
+        """Обработка событий с сохранением базовой логики"""
+        action = super().handle_event(event)  # Используем логику родителя для навигации
+        if action in ["main_menu", "quit"]:
+            return action
+        return None
+
+    def draw(self, surface: pygame.Surface):
+        """Отрисовка с добавлением поздравительного текста"""
+        # Отрисовка фона и кнопок (базовая логика)
+        surface.blit(self.background, (0, 0))
+
+        # Поздравительный текст
+        congrats_text = self.congrats_font.render("Поздравляем! Игра пройдена!", True, (255, 215, 0))  # Золотой цвет
+        surface.blit(congrats_text, (SCREEN_WIDTH // 2 - congrats_text.get_width() // 2, 200))
+
+        # Отрисовка кнопок
+        for button in self.buttons:
+            button.draw(surface)
