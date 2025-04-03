@@ -6,10 +6,10 @@ from custom_logging import Logger
 # Инициализация логгера
 Logger().initialize()
 
-from levels import LevelManager, LEVEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT
-from menu import MainMenu, FinalMenu
+from levels.levels import LevelManager, LEVEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT
+from levels.menu import MainMenu, FinalMenu
 from Characters.Hero.hero import Hero
-from audio import SoundManager  # класс управления звуками
+from levels.audio import SoundManager  # класс управления звуками
 
 # Инициализация Pygame
 pygame.init()

@@ -4,7 +4,7 @@ import pygame
 from Characters.action import Action
 from Characters.character import  Character
 from Characters.animation2 import AnimatedObject
-from levels import GameObject
+from levels.levels import GameObject
 from Characters.type_object import ObjectType
 from custom_logging import Logger
 
