@@ -29,7 +29,7 @@ class Hero(AnimatedCharacter):
         :param obj_type: Тип объекта
         """
         # Конфигурация анимаций для героя
-        path_to_assets = "Characters/assets/sprites"
+        path_to_assets = "assets/player_sprites"
         animation_config = {
             "IDLE": {"file_path": f"{path_to_assets}/player_stand.png", "frame_count": 1},
             "MOVE": {"file_path": f"{path_to_assets}/player_walk.png", "frame_count": 2},

@@ -3,7 +3,7 @@ from typing import cast
 
 from Characters.action import Action
 from Characters.type_object import ObjectType
-from levels import Platform, MovingPlatformVertical
+from levels.levels import Platform, MovingPlatformVertical
 from custom_logging import Logger
 
 class Character:

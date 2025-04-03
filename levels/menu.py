@@ -1,6 +1,6 @@
 import pygame
 from typing import Tuple, Optional, List
-from levels import load_sprite, SCREEN_WIDTH, SCREEN_HEIGHT
+from levels.levels import load_sprite, SCREEN_WIDTH, SCREEN_HEIGHT
 
 # Типы для аннотаций
 Color = Tuple[int, int, int]
